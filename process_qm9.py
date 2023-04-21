@@ -2,6 +2,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import AllChem
+import numpy as np
 
 def is_valid_smiles(smiles):
     mol = Chem.MolFromSmiles(smiles)
