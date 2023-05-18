@@ -20,6 +20,9 @@ def calculate_moments(smiles):
             dipole = np.zeros(3)
             for i in range(mol.GetNumAtoms()):
                 dipole += charges[i] * coords[i]
+            
+            # Convert to Debye
+            dipole *= 0.20819434
 
             # Calculate quadrupole moment tensor
             q_tensor = np.zeros((3, 3))
@@ -36,7 +39,6 @@ def calculate_moments(smiles):
             return dipole, q_tensor, charges
     return None, None, None
 
-
 def main():
     # Load the qm9.csv dataset
     df = pd.read_csv("data/qm9.csv")
@@ -48,7 +50,7 @@ def main():
     df[["dipole", "quadrupole_moments", "charges"]] = df["smiles"].apply(lambda x: pd.Series(calculate_moments(x)))
 
     # Save the updated dataframe to qm9_updated.csv
-    df.to_csv("data/qm9_with_multipoles.csv", index=False)
+    df.to_csv("data/qm9_updated.csv", index=False)
 
 if __name__ == "__main__":
     main()
