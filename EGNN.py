@@ -13,9 +13,9 @@ class EquivariantGNN(torch.nn.Module):
         # The SE3Transformer requires a list of dimensions for each layer
         self.transformer = SE3Transformer(
             dim=num_node_features,  # input dimension
-            heads=8, # number of attention heads
+            heads=4, # number of attention heads
             dim_head=16, # dimension of each head
-            output_dim = hidden_dim,  # desired output dimension
+            layers=(2,2,2),
             num_degrees=4 # number of interaction types
         )
 
