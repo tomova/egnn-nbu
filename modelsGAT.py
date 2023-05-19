@@ -3,9 +3,11 @@ from torch_geometric.data import DataLoader
 from EGNN_GAT import EquivariantGNN_GAT
 from sklearn.metrics import mean_absolute_error, r2_score
 import numpy as np
+import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 import torch
 
-num_node_features = 4
+num_node_features = 8
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
 hidden_dim = 64
 output_dim_dipoles = 3  # for dipoles
