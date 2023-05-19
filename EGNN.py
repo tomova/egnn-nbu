@@ -10,28 +10,22 @@ class EquivariantGNN(torch.nn.Module):
 
         self.embedding = torch.nn.Embedding(num_embeddings=num_node_types, embedding_dim=num_node_features)
 
-        # The SE3Transformer requires a list of dimensions for each layer
         self.transformer = SE3Transformer(
-            dim=num_node_features,  # input dimension
-            heads=8, # number of attention heads
-            dim_head=16, # dimension of each head
-            num_degrees=4 # number of interaction types
+            dim=8,  
+            heads=8,
+            dim_head=16, 
+            num_degrees=4
         )
 
         self.lin = Lin(hidden_dim, output_dim)
 
     def forward(self, data):
-        x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
-        #x = torch.cat([data.pos, self.embedding(data.z)], dim=-1)  # use embedding for atomic numbers
-        # we need to convert the data to the format expected by the SE3Transformer
+        x = torch.cat([data.pos, self.embedding(data.z)], dim=-1)  # Combine position and atom type information
         x = x.unsqueeze(0)
         edges = data.edge_index.unsqueeze(0)
         edge_attr = data.edge_attr.unsqueeze(0)
-        #x = x.reshape(1, *x.shape)
-        #edges = data.edge_index.reshape(1, *data.edge_index.shape)
-        #edge_attr = data.edge_attr.reshape(1, *data.edge_attr.shape)
+
         x = self.transformer(x, edges, edge_attr)
-        # Convert the SE3T object back into a tensor
         x = x.tensor
         x = F.relu(x)
         x = self.lin(x)
