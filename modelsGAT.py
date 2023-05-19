@@ -93,8 +93,8 @@ for epoch in range(100):
         best_valid_loss = valid_loss
         epochs_no_improve = 0
         # Save the model
-        torch.save({'dipole_model_state_dict': dipole_model.state_dict(),
-                    'quadrupole_model_state_dict': quadrupole_model.state_dict()}, 'best_model.pth')
+        torch.save({'dipole_model_state_dict_GAT': dipole_model.state_dict(),
+                    'quadrupole_model_state_dict_GAT': quadrupole_model.state_dict()}, 'best_model_GAT.pth')
     else:
         epochs_no_improve += 1
         if epochs_no_improve == patience:
@@ -102,9 +102,9 @@ for epoch in range(100):
             break
 
 # Load the best model
-checkpoint = torch.load('best_model.pth')
-dipole_model.load_state_dict(checkpoint['dipole_model_state_dict'])
-quadrupole_model.load_state_dict(checkpoint['quadrupole_model_state_dict'])
+checkpoint = torch.load('best_model_GAT.pth')
+dipole_model.load_state_dict(checkpoint['dipole_model_state_dict_GAT'])
+quadrupole_model.load_state_dict(checkpoint['quadrupole_model_state_dict_GAT'])
 
 # Test the model
 dipole_model.eval()
@@ -138,5 +138,5 @@ r2_dipole = [r2_score(actuals_dipole[:, i], preds_dipole[:, i]) for i in range(o
 mae_quadrupole = [[mean_absolute_error(actuals_quadrupole[:, i, j], preds_quadrupole[:, i, j]) for j in range(output_dim_quadrupoles)] for i in range(output_dim_quadrupoles)]
 r2_quadrupole = [[r2_score(actuals_quadrupole[:, i, j], preds_quadrupole[:, i, j]) for j in range(output_dim_quadrupoles)] for i in range(output_dim_quadrupoles)]
 
-print(f'Dipole Model: MAE = {mae_dipole}, R^2 = {r2_dipole}')
-print(f'Quadrupole Model: MAE = {mae_quadrupole}, R^2 = {r2_quadrupole}')
+print(f'Dipole Model GAT: MAE = {mae_dipole}, R^2 = {r2_dipole}')
+print(f'Quadrupole Model GAT: MAE = {mae_quadrupole}, R^2 = {r2_quadrupole}')
