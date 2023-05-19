@@ -15,7 +15,7 @@ class EquivariantGNN(torch.nn.Module):
         self.embedding = torch.nn.Embedding(num_embeddings=num_node_types, embedding_dim=num_node_features)
 
         self.transformer = SE3Transformer(
-            dim=num_node_features,  
+            dim=num_node_features + 3,  # 3 for the 3D position  
             heads=8,
             dim_head=16, 
             num_degrees=4
