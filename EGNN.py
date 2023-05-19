@@ -24,7 +24,7 @@ class EquivariantGNN(torch.nn.Module):
 
     def forward(self, data):
         # Map atomic numbers to indices
-        z_indices = data.z.apply_(lambda x: atomic_number_to_index[x.item()])  
+        z_indices = data.z.cpu().apply_(lambda x: atomic_number_to_index[x.item()]).to(device)
 
         x = torch.cat([data.pos, self.embedding(z_indices)], dim=-1)  # Combine position and atom type information
         x = x.unsqueeze(0)
