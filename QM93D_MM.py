@@ -103,8 +103,6 @@ class QM93D(InMemoryDataset):
             data = Data(pos=R_i, z=z_i, y=y_i[0], mu=y_i[0], alpha=y_i[1], homo=y_i[2], lumo=y_i[3], gap=y_i[4], r2=y_i[5], zpve=y_i[6], U0=y_i[7], U=y_i[8], H=y_i[9], G=y_i[10], Cv=y_i[11], dipole=dipole_i, quadrupole=quadrupole_i)
             # Add edge features here:
             data = self.add_edge_features(data)
-            print(data.edge_index)  # New line
-            print(data.edge_attr)  # New line
             data_list.append(data)
 
         if self.pre_filter is not None:
