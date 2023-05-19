@@ -8,20 +8,31 @@ class EquivariantGNN(torch.nn.Module):
     def __init__(self, num_node_features, hidden_dim, output_dim, num_node_types):
         super(EquivariantGNN, self).__init__()
         self.embedding = torch.nn.Embedding(num_embeddings=num_node_types, embedding_dim=num_node_features)
+        
+        num_layers = 4
+        num_degrees = 4
+        div = 4
+        num_heads = 1
 
-        transformer_config = {
-            'num_layers': 4,
-            'num_channels': num_node_features,
-            'num_degrees': 4,
-            'div': 4,
-            'dim_input': num_node_features,
-            'dim_output': hidden_dim,
-            'num_heads': 1,
-        }
-
-        self.transformer1 = SE3Transformer(transformer_config)
-        transformer_config['dim_input'] = hidden_dim
-        self.transformer2 = SE3Transformer(transformer_config)
+        self.transformer1 = SE3Transformer(
+            num_layers=num_layers,
+            num_channels=num_node_features,
+            num_degrees=num_degrees,
+            div=div,
+            dim_input=num_node_features,
+            dim_output=hidden_dim,
+            num_heads=num_heads
+        )
+        
+        self.transformer2 = SE3Transformer(
+            num_layers=num_layers,
+            num_channels=hidden_dim,
+            num_degrees=num_degrees,
+            div=div,
+            dim_input=hidden_dim,
+            dim_output=hidden_dim,
+            num_heads=num_heads
+        )
 
         self.lin = Lin(hidden_dim, output_dim)
 
