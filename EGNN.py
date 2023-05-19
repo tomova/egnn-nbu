@@ -6,6 +6,7 @@ from se3_transformer_pytorch import SE3Transformer
 
 # Define the mapping from atomic numbers to indices
 atomic_number_to_index = {1: 0, 6: 1, 7: 2, 8: 3, 9: 4}
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class EquivariantGNN(torch.nn.Module):
     def __init__(self, num_node_features, hidden_dim, output_dim, num_node_types):
