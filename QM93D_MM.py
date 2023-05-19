@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import torch
 from sklearn.utils import shuffle
-
+from torch.nn import functional as F
 from torch_geometric.data import InMemoryDataset, download_url
 from torch_geometric.data import Data, DataLoader
 from torch_geometric.utils import to_undirected
@@ -100,7 +100,11 @@ class QM93D(InMemoryDataset):
             y_i = [torch.tensor(target[name][i],dtype=torch.float32) for name in ['mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve','U0', 'U', 'H', 'G', 'Cv']]
             dipole_i = torch.tensor(dipoles[i], dtype=torch.float32)
             quadrupole_i = torch.tensor(quadrupoles[i], dtype=torch.float32)
-            data = Data(pos=R_i, z=z_i, y=y_i[0], mu=y_i[0], alpha=y_i[1], homo=y_i[2], lumo=y_i[3], gap=y_i[4], r2=y_i[5], zpve=y_i[6], U0=y_i[7], U=y_i[8], H=y_i[9], G=y_i[10], Cv=y_i[11], dipole=dipole_i, quadrupole=quadrupole_i)
+            # Encode the atomic number as a one-hot vector
+            node_features = F.one_hot(z_i, num_classes=len(ATOMIC_WEIGHTS)).float()
+
+            # Create the data instance
+            data = Data(pos=R_i, x=node_features, z=z_i, y=y_i[0], mu=y_i[0], alpha=y_i[1], homo=y_i[2], lumo=y_i[3], gap=y_i[4], r2=y_i[5], zpve=y_i[6], U0=y_i[7], U=y_i[8], H=y_i[9], G=y_i[10], Cv=y_i[11], dipole=dipole_i, quadrupole=quadrupole_i)
             # Add edge features here:
             data = self.add_edge_features(data)
             data_list.append(data)

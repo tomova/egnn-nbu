@@ -5,7 +5,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import numpy as np
 import torch
 
-num_node_features = 7
+num_node_features = 5
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
 hidden_dim = 64
 output_dim_dipoles = 3  # for dipoles

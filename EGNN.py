@@ -21,11 +21,15 @@ class EquivariantGNN(torch.nn.Module):
         self.lin = Lin(hidden_dim, output_dim)
 
     def forward(self, data):
-        x = torch.cat([data.pos, self.embedding(data.z)], dim=-1)  # use embedding for atomic numbers
+        x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
+        #x = torch.cat([data.pos, self.embedding(data.z)], dim=-1)  # use embedding for atomic numbers
         # we need to convert the data to the format expected by the SE3Transformer
-        x = x.reshape(1, *x.shape)
-        edges = data.edge_index.reshape(1, *data.edge_index.shape)
-        edge_attr = data.edge_attr.reshape(1, *data.edge_attr.shape)
+        x = x.unsqueeze(0)
+        edges = data.edge_index.unsqueeze(0)
+        edge_attr = data.edge_attr.unsqueeze(0)
+        #x = x.reshape(1, *x.shape)
+        #edges = data.edge_index.reshape(1, *data.edge_index.shape)
+        #edge_attr = data.edge_attr.reshape(1, *data.edge_attr.shape)
         x = self.transformer(x, edges, edge_attr)
         # Convert the SE3T object back into a tensor
         x = x.tensor
