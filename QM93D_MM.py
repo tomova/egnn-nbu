@@ -6,6 +6,7 @@ from sklearn.utils import shuffle
 
 from torch_geometric.data import InMemoryDataset, download_url
 from torch_geometric.data import Data, DataLoader
+from torch_geometric.utils import to_undirected
 
 # Approximate atomic weights
 ATOMIC_WEIGHTS = {
@@ -63,6 +64,16 @@ class QM93D(InMemoryDataset):
     def download(self):
         download_url(self.url, self.raw_dir)
 
+    def add_edge_features(self, data):
+        num_nodes = data.pos.size(0)
+        device = data.pos.device
+        edge_index = to_undirected(torch.combinations(torch.arange(num_nodes, device=device)))
+        row, col = edge_index
+        edge_attr = torch.norm(data.pos[row] - data.pos[col], p=2, dim=-1).view(-1, 1)
+        data.edge_index = edge_index
+        data.edge_attr = edge_attr
+        return data
+
     def process(self):
         
         data = np.load(osp.join(self.raw_dir, self.raw_file_names))
@@ -90,7 +101,10 @@ class QM93D(InMemoryDataset):
             dipole_i = torch.tensor(dipoles[i], dtype=torch.float32)
             quadrupole_i = torch.tensor(quadrupoles[i], dtype=torch.float32)
             data = Data(pos=R_i, z=z_i, y=y_i[0], mu=y_i[0], alpha=y_i[1], homo=y_i[2], lumo=y_i[3], gap=y_i[4], r2=y_i[5], zpve=y_i[6], U0=y_i[7], U=y_i[8], H=y_i[9], G=y_i[10], Cv=y_i[11], dipole=dipole_i, quadrupole=quadrupole_i)
-
+            # Add edge features here:
+            data = self.add_edge_features(data)
+            print(data.edge_index)  # New line
+            print(data.edge_attr)  # New line
             data_list.append(data)
 
         if self.pre_filter is not None:
