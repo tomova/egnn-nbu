@@ -1,7 +1,6 @@
 import torch
 from torch.nn import Linear as Lin, ReLU
 from torch.nn import functional as F
-from torch_points3d.applications.pointnet import PointNet
 from se3_transformer_pytorch import SE3Transformer
 
 class EquivariantGNN_PointNet(torch.nn.Module):
