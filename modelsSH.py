@@ -30,6 +30,7 @@ test_loader = DataLoader(test_data, batch_size=32)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Define models
+num_degrees = 3
 dipole_model = EGNN(num_node_features, hidden_dim, output_dim_dipoles, output_dim_quadrupoles, num_degrees).to(device)
 quadrupole_model = EGNN(num_node_features, hidden_dim, output_dim_quadrupoles, output_dim_quadrupoles, num_degrees).to(device)
 
