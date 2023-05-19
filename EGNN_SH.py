@@ -4,6 +4,8 @@ from torch import nn
 from torch.nn import Linear as Lin
 from torch_geometric.nn import MessagePassing
 
+num_node_types = 5
+
 class SphericalHarmonicsLayer(MessagePassing):
     def __init__(self, in_channels, out_channels, num_degrees):
         super(SphericalHarmonicsLayer, self).__init__(aggr='add')
