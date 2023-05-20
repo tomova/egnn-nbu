@@ -21,6 +21,9 @@ class SphericalHarmonicsLayer(MessagePassing):
         return self.propagate(edge_index, x=x)
 
     def message(self, x_j, x_i):
+        # Verify dimensions of x_j and x_i
+        assert x_j.dim() == 2 and x_j.shape[-1] == self.lin.in_features
+        assert x_i.dim() == 2 and x_i.shape[-1] == self.lin.in_features
         return self.lin(x_j - x_i)
 
     def update(self, aggr_out):
@@ -44,6 +47,11 @@ class EGNN(nn.Module):
 
         x = self.sh_layer(x, data.edge_index)
         x = F.relu(x)
+
+        # Verify dimensions of weight tensors
+        assert x.dim() == 2 and x.shape[-1] == self.lin_dipoles.in_features
+        assert x.dim() == 2 and x.shape[-1] == self.lin_quadrupoles.in_features
+
 
         # Reshape x to (batch_size * num_nodes, hidden_dim)
         x = x.view(-1, x.size(-1))

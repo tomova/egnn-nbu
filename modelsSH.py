@@ -59,6 +59,10 @@ for epoch in range(100):
     for batch in train_loader:
         # Forward pass
         batch = batch.to(device)
+        # Verify dimensions of batch
+        assert batch.pos.dim() == 2 and batch.pos.shape[-1] == num_node_features
+        assert batch.z.dim() == 1 and batch.z.shape[0] == batch.num_nodes
+
         dipole_pred = dipole_model(batch)
         quadrupole_pred = quadrupole_model(batch)
         
