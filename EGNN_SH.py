@@ -54,7 +54,9 @@ class EGNN(nn.Module):
 
 
         # Reshape x to (batch_size * num_nodes, hidden_dim)
-        x = x.view(-1, x.size(-1))
+        #x = x.view(-1, x.size(-1))
+        # Reshape x to (batch_size, num_nodes, hidden_dim)
+        x = x.view(data.num_graphs, data.num_nodes, -1)
 
         #dipole_pred = self.lin_dipoles(x.view(-1, self.lin_dipoles.in_features))
         #quadrupole_pred = self.lin_quadrupoles(x.view(-1, self.lin_quadrupoles.in_features))
