@@ -44,10 +44,22 @@ class EGNN(nn.Module):
 
         x = self.sh_layer(x, data.edge_index)
         x = F.relu(x)
-        dipole_pred = self.lin_dipoles(x.view(-1, self.lin_dipoles.in_features))
-        quadrupole_pred = self.lin_quadrupoles(x.view(-1, self.lin_quadrupoles.in_features))
+
+        # Reshape x to (batch_size * num_nodes, hidden_dim)
+        x = x.view(-1, x.size(-1))
+
+        #dipole_pred = self.lin_dipoles(x.view(-1, self.lin_dipoles.in_features))
+        #quadrupole_pred = self.lin_quadrupoles(x.view(-1, self.lin_quadrupoles.in_features))
         
-        dipole_pred = dipole_pred.view(-1, output_dim_dipoles)
-        quadrupole_pred = quadrupole_pred.view(-1, output_dim_quadrupoles)
+        #dipole_pred = dipole_pred.view(-1, output_dim_dipoles)
+        #quadrupole_pred = quadrupole_pred.view(-1, output_dim_quadrupoles)
+
+        dipole_pred = self.lin_dipoles(x)
+        quadrupole_pred = self.lin_quadrupoles(x)
+
+        # Reshape dipole_pred and quadrupole_pred to (batch_size, num_nodes, output_dim)
+        dipole_pred = dipole_pred.view(-1, data.num_nodes, output_dim_dipoles)
+        quadrupole_pred = quadrupole_pred.view(-1, data.num_nodes, output_dim_quadrupoles)
+
         
         return dipole_pred, quadrupole_pred
