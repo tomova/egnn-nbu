@@ -25,10 +25,20 @@ atomic_number_to_index = {1: 0, 6: 1, 7: 2, 8: 3, 9: 4}
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
 train_data, valid_data, test_data = dataset[split_idx['train']], dataset[split_idx['valid']], dataset[split_idx['test']]
 
+def collate(items):
+    # Use the default collate function for most attributes
+    batch = torch_geometric.data.Batch.from_data_list(items)
+
+    # Manually collate the dipole attribute
+    batch.dipole = torch.stack([item.dipole for item in items])
+
+    return batch
+
+
 # Create data loaders
-train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
-valid_loader = DataLoader(valid_data, batch_size=32)
-test_loader = DataLoader(test_data, batch_size=32)
+train_loader = DataLoader(train_data, batch_size=32, shuffle=True, collate_fn=collate)
+valid_loader = DataLoader(valid_data, batch_size=32, collate_fn=collate)
+test_loader = DataLoader(test_data, batch_size=32, collate_fn=collate)
 
 # Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
