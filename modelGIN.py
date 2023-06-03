@@ -100,20 +100,20 @@ for epoch in range(num_epochs):
     quadrupole_model.train()
     for batch in train_loader:
         # Print shapes of dipole and quadrupole tensors
-        print("Shape of batch.dipole before reshape: ", batch.dipole.shape)
-        print("Shape of batch.quadrupole before reshape: ", batch.quadrupole.shape)
+        #print("Shape of batch.dipole before reshape: ", batch.dipole.shape)
+        #print("Shape of batch.quadrupole before reshape: ", batch.quadrupole.shape)
         # Reshape batch.dipole and batch.quadrupole
         batch.dipole = batch.dipole.view(-1, output_dim_dipoles).to(device)
         batch.quadrupole = batch.quadrupole.view(-1, output_dim_quadrupoles).to(device)
-        print("Shape of batch.dipole after reshape: ", batch.dipole.shape)
-        print("Shape of batch.quadrupole after reshape: ", batch.quadrupole.shape)
+        #print("Shape of batch.dipole after reshape: ", batch.dipole.shape)
+        #print("Shape of batch.quadrupole after reshape: ", batch.quadrupole.shape)
         # Forward pass
         batch = batch.to(device)
         dipole_pred = dipole_model(batch)
         quadrupole_pred = quadrupole_model(batch)
 
-        print("Shape of predicted dipole: ", dipole_pred.shape)
-        print("Shape of ground truth dipole: ", batch.dipole.shape)
+        #print("Shape of predicted dipole: ", dipole_pred.shape)
+        #print("Shape of ground truth dipole: ", batch.dipole.shape)
 
         # Compute loss
         dipole_loss = criterion(dipole_pred, batch.dipole)
@@ -157,7 +157,7 @@ for epoch in range(num_epochs):
         epochs_no_improve = 0
         # Save the model
         torch.save({'dipole_model_state_dict': dipole_model.state_dict(),
-                    'quadrupole_model_state_dict': quadrupole_model.state_dict()}, 'best_model.pth')
+                    'quadrupole_model_state_dict': quadrupole_model.state_dict()}, 'best_model_gin.pth')
     else:
         epochs_no_improve += 1
         if epochs_no_improve == patience:
