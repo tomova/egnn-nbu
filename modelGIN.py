@@ -9,25 +9,21 @@ from QM93D_MM import QM93D
 from sklearn.metrics import mean_absolute_error, r2_score
 
 
-class MyData(Data):
-    def __init__(self, x=None, edge_index=None, edge_attr=None, y=None, pos=None, norm=None, face=None, dipole=None, **kwargs):
-        super(MyData, self).__init__(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y, pos=pos, norm=norm, face=face, **kwargs)
-        self.dipole = dipole
-
 def collate(items):
     # Unzip the list of items
     l = list(zip(*items))
 
     # The 3rd item is the dipole moment, which is a tensor of shape (3,)
-    dipoles = torch.stack(l[2], dim=0)
+    dipole = torch.stack(l[2], dim=0)
 
     # Collate the other items in the usual way
     collated_items = [default_collate(sublist) for sublist in l[:2] + l[3:]]
 
     # Add the dipole moments back into the collated items
-    collated_items[2] = dipoles
+    collated_items[2] = dipole
 
     return collated_items
+
 
 num_node_features = 8
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
