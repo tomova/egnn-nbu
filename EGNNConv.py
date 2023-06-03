@@ -30,11 +30,12 @@ class EGNNConv(MessagePassing):
 class EquivariantGNN(torch.nn.Module):
     def __init__(self, hidden_channels, edge_dim, node_dim, num_node_types):
         super(EquivariantGNN, self).__init__()
-        self.egnn1 = EGNNConv(num_node_types, hidden_channels, edge_dim, node_dim)
+        self.egnn1 = EGNNConv(num_node_types + 3, hidden_channels, edge_dim, node_dim) # 3 for 3D position
         self.egnn2 = EGNNConv(hidden_channels, hidden_channels, edge_dim, node_dim)
         self.lin = torch.nn.Linear(hidden_channels, 1)
 
-    def forward(self, x, edge_index, edge_attr, batch):
+    def forward(self, pos, z, edge_index, edge_attr, batch):
+        x = torch.cat((pos, F.one_hot(z, num_classes=num_node_types).float()), dim=1) # Concatenate position and one-hot encoded atomic number
         x = F.relu(self.egnn1(x, edge_index, edge_attr))
         x = F.relu(self.egnn2(x, edge_index, edge_attr))
         x = global_add_pool(x, batch)
