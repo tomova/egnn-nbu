@@ -7,7 +7,7 @@ import os
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 import torch
 
-num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
+num_node_types = 10  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
 num_node_features = 3 + num_node_types  # 3 for 3D position, num_node_types for one-hot encoded atomic number
 hidden_dim = 64
 output_dim_dipoles = 3  # for dipoles
