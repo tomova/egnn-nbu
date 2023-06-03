@@ -54,7 +54,11 @@ class GINNet(torch.nn.Module):
         print(f"x type: {type(x)}, edge_index type: {type(edge_index)}")
 
         x = F.relu(self.conv1(x, edge_index))
+        print("Shape of x before pooling: ", x.shape)
+        print("Shape of batch tensor: ", data.batch.shape)
         x = global_add_pool(x, data.batch)
+        print("Shape of x after pooling: ", x.shape)
+
         return self.fc1(x)
 
 
@@ -86,7 +90,10 @@ for epoch in range(100):
         batch = batch.to(device)
         dipole_pred = dipole_model(batch)
         quadrupole_pred = quadrupole_model(batch)
-        
+
+        print("Shape of predicted dipole: ", dipole_pred.shape)
+        print("Shape of ground truth dipole: ", batch.dipole.shape)
+
         # Compute loss
         dipole_loss = criterion(dipole_pred, batch.dipole)
         quadrupole_loss = criterion(quadrupole_pred, batch.quadrupole)
