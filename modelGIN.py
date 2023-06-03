@@ -37,12 +37,23 @@ class GINNet(torch.nn.Module):
         nn1 = torch.nn.Sequential(torch.nn.Linear(num_node_features, hidden_dim), torch.nn.ReLU(), torch.nn.Linear(hidden_dim, hidden_dim))
         self.conv1 = GINConv(nn1)
         self.fc1 = torch.nn.Linear(hidden_dim, output_dim)
+        
+        # Adding an embedding layer for atom types
+        self.embedding = nn.Embedding(len(atomic_number_to_index), num_node_features - 3)  # -3 as we have 3D coordinates already
 
     def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+        z_indices = torch.tensor([atomic_number_to_index[atomic_number] for atomic_number in data.z.cpu().numpy()]).to(device)
+        x = torch.cat([data.pos, self.embedding(z_indices)], dim=-1)  # Combine position and atom type information
+
+        edge_index = data.edge_index
+        
+        print(f"x shape: {x.shape}, edge_index shape: {edge_index.shape}")
+        print(f"x type: {type(x)}, edge_index type: {type(edge_index)}")
+
         x = F.relu(self.conv1(x, edge_index))
-        x = global_add_pool(x, batch)
+        x = global_add_pool(x, data.batch)
         return self.fc1(x)
+
 
 
 # Define models
