@@ -18,6 +18,9 @@ output_dim_quadrupoles = 6  # for quadrupoles
 # Load the dataset
 dataset = QM93D(root='data')
 
+# Define the mapping from atomic numbers to indices
+atomic_number_to_index = {1: 0, 6: 1, 7: 2, 8: 3, 9: 4}
+
 # Split data into train, validation and test
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
 train_data, valid_data, test_data = dataset[split_idx['train']], dataset[split_idx['valid']], dataset[split_idx['test']]
