@@ -15,13 +15,19 @@ class MyData(Data):
         self.dipole = dipole
 
 def collate(items):
-    # Use the default collate function for most attributes
-    batch = Batch.from_data_list(items)
+    # Unzip the list of items
+    l = list(zip(*items))
 
-    # Manually collate the dipole attribute
-    batch.dipole = torch.stack([item.dipole for item in items])
+    # The 3rd item is the dipole moment, which is a tensor of shape (3,)
+    dipoles = torch.stack(l[2], dim=0)
 
-    return batch
+    # Collate the other items in the usual way
+    collated_items = [default_collate(sublist) for sublist in l[:2] + l[3:]]
+
+    # Add the dipole moments back into the collated items
+    collated_items[2] = dipoles
+
+    return collated_items
 
 num_node_features = 8
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
