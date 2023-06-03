@@ -97,8 +97,13 @@ for epoch in range(100):
     quadrupole_model.train()
     for batch in train_loader:
         # Print shapes of dipole and quadrupole tensors
-        print("Shape of batch.dipole: ", batch.dipole.shape)
-        print("Shape of batch.quadrupole: ", batch.quadrupole.shape)
+        print("Shape of batch.dipole before reshape: ", batch.dipole.shape)
+        print("Shape of batch.quadrupole before reshape: ", batch.quadrupole.shape)
+        # Reshape batch.dipole and batch.quadrupole
+        batch.dipole = batch.dipole.view(-1, 3)
+        batch.quadrupole = batch.quadrupole.view(-1, 6)
+        print("Shape of batch.dipole after reshape: ", batch.dipole.shape)
+        print("Shape of batch.quadrupole after reshape: ", batch.quadrupole.shape)
         # Forward pass
         batch = batch.to(device)
         dipole_pred = dipole_model(batch)
