@@ -2,12 +2,26 @@ import os
 import torch
 from torch.nn import functional as F
 from torch_geometric.nn import GINConv, global_add_pool
-from torch_geometric.data import DataLoader
+from torch_geometric.data import Data, DataLoader, Batch
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 import numpy as np
 from QM93D_MM import QM93D
 from sklearn.metrics import mean_absolute_error, r2_score
 
+
+class MyData(Data):
+    def __init__(self, x=None, edge_index=None, edge_attr=None, y=None, pos=None, norm=None, face=None, dipole=None, **kwargs):
+        super(MyData, self).__init__(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y, pos=pos, norm=norm, face=face, **kwargs)
+        self.dipole = dipole
+
+def collate(items):
+    # Use the default collate function for most attributes
+    batch = Batch.from_data_list(items)
+
+    # Manually collate the dipole attribute
+    batch.dipole = torch.stack([item.dipole for item in items])
+
+    return batch
 
 num_node_features = 8
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)

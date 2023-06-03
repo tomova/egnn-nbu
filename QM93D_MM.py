@@ -16,6 +16,10 @@ ATOMIC_WEIGHTS = {
     9: 18.998,  # Fluorine
 }
 
+class MyData(Data):
+    def __init__(self, **kwargs):
+        super(MyData, self).__init__(**kwargs)
+
 #mostly taken from https://github.com/divelab/DIG/blob/dig-stable/dig/threedgraph/dataset/PygQM93D.py 
 class QM93D(InMemoryDataset):
 
@@ -100,7 +104,7 @@ class QM93D(InMemoryDataset):
             dipole_i = torch.tensor(dipoles[i], dtype=torch.float32)
             quadrupole_i = torch.tensor(quadrupoles[i], dtype=torch.float32)
 
-            data = Data(pos=R_i, z=z_i, y=y_i[0], mu=y_i[0], alpha=y_i[1], homo=y_i[2], lumo=y_i[3], gap=y_i[4], r2=y_i[5], zpve=y_i[6], U0=y_i[7], U=y_i[8], H=y_i[9], G=y_i[10], Cv=y_i[11], dipole=dipole_i, quadrupole=quadrupole_i)
+            data = MyData(pos=R_i, z=z_i, y=y_i[0], mu=y_i[0], alpha=y_i[1], homo=y_i[2], lumo=y_i[3], gap=y_i[4], r2=y_i[5], zpve=y_i[6], U0=y_i[7], U=y_i[8], H=y_i[9], G=y_i[10], Cv=y_i[11], dipole=dipole_i, quadrupole=quadrupole_i)
             # Add edge features here:
             data = self.add_edge_features(data)
             data_list.append(data)
