@@ -23,7 +23,7 @@ num_node_features = 8
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
 hidden_dim = 64
 output_dim_dipoles = 3  # for dipoles
-output_dim_quadrupoles = 6  # for quadrupoles
+output_dim_quadrupoles = 9  # for quadrupoles
 
 # Load the dataset
 dataset = QM93D(root='data')
