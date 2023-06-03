@@ -9,21 +9,15 @@ from QM93D_MM import QM93D
 from sklearn.metrics import mean_absolute_error, r2_score
 
 
-def collate(items):
-    # Unzip the list of items
-    l = list(zip(*items))
+class MyDataLoader(DataLoader):
+    def collate(self, data_list):
+        batch = super().collate(data_list)
 
-    # The 3rd item is the dipole moment, which is a tensor of shape (3,)
-    dipole = torch.stack(l[2], dim=0)
+        # Handle extra attributes here
+        batch.dipole = torch.stack([data.dipole for data in data_list])
+        batch.quadrupole = torch.stack([data.quadrupole for data in data_list])
 
-    # Collate the other items in the usual way
-    collated_items = [default_collate(sublist) for sublist in l[:2] + l[3:]]
-
-    # Add the dipole moments back into the collated items
-    collated_items[2] = dipole
-
-    return collated_items
-
+        return batch
 
 num_node_features = 8
 num_node_types = 5  # number of unique atomic numbers - len(ATOMIC_WEIGHTS)
@@ -41,20 +35,10 @@ atomic_number_to_index = {1: 0, 6: 1, 7: 2, 8: 3, 9: 4}
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
 train_data, valid_data, test_data = dataset[split_idx['train']], dataset[split_idx['valid']], dataset[split_idx['test']]
 
-def collate(items):
-    # Use the default collate function for most attributes
-    batch = torch_geometric.data.Batch.from_data_list(items)
-
-    # Manually collate the dipole attribute
-    batch.dipole = torch.stack([item.dipole for item in items])
-
-    return batch
-
-
 # Create data loaders
-train_loader = DataLoader(train_data, batch_size=32, shuffle=True, collate_fn=collate)
-valid_loader = DataLoader(valid_data, batch_size=32, collate_fn=collate)
-test_loader = DataLoader(test_data, batch_size=32, collate_fn=collate)
+train_loader = MyDataLoader(train_data, batch_size=32, shuffle=True)
+valid_loader = MyDataLoader(valid_data, batch_size=32)
+test_loader = MyDataLoader(test_data, batch_size=32)
 
 # Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
