@@ -88,7 +88,10 @@ best_valid_loss = float('inf')
 patience = 10
 epochs_no_improve = 0
 
-for epoch in range(100):
+
+num_epochs = 1000
+
+for epoch in range(num_epochs):
     train_loss = 0
     valid_loss = 0
 
@@ -194,11 +197,11 @@ actuals_quadrupole = np.concatenate(actuals_quadrupole)
 preds_quadrupole = np.concatenate(preds_quadrupole)
 
 # Calculate metrics for dipoles
-mae_dipole = [mean_absolute_error(actuals_dipoles[:, i], preds_dipoles[:, i]) for i in range(output_dim_dipoles)]
-r2_dipole = [r2_score(actuals_dipoles[:, i], preds_dipoles[:, i]) for i in range(output_dim_dipoles)]
+mae_dipole = [mean_absolute_error(actuals_dipole[:, i], preds_dipole[:, i]) for i in range(output_dim_dipoles)]
+r2_dipole = [r2_score(actuals_dipole[:, i], preds_dipole[:, i]) for i in range(output_dim_dipoles)]
 # Calculate metrics for quadrupoles
-mae_quadrupole = [mean_absolute_error(actuals_quadrupoles[:, i], preds_quadrupoles[:, i]) for i in range(output_dim_quadrupoles)]
-r2_quadrupole = [r2_score(actuals_quadrupoles[:, i], preds_quadrupoles[:, i]) for i in range(output_dim_quadrupoles)]
+mae_quadrupole = [mean_absolute_error(actuals_quadrupole[:, i], preds_quadrupole[:, i]) for i in range(output_dim_quadrupoles)]
+r2_quadrupole = [r2_score(actuals_quadrupole[:, i], preds_quadrupole[:, i]) for i in range(output_dim_quadrupoles)]
 
 print(f'Dipole Model: MAE = {mae_dipole}, R^2 = {r2_dipole}')
 print(f'Quadrupole Model: MAE = {mae_quadrupole}, R^2 = {r2_quadrupole}')
