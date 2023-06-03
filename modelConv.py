@@ -30,8 +30,8 @@ test_loader = DataLoader(test_data, batch_size=32)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Define models
-dipole_model = EquivariantGNN(hidden_dim, 3, 3, num_node_types).to(device)  # 3 for dipole
-quadrupole_model = EquivariantGNN(hidden_dim, 6, 3, num_node_types).to(device)  # 6 for quadrupole
+dipole_model = EquivariantGNN(hidden_dim, 3, 1, num_node_types).to(device)  # 3 for dipole
+quadrupole_model = EquivariantGNN(hidden_dim, 6, 1, num_node_types).to(device)  # 6 for quadrupole
 
 # Define loss
 criterion = torch.nn.MSELoss()
@@ -52,6 +52,11 @@ for epoch in range(100):
     dipole_model.train()
     quadrupole_model.train()
     for batch in train_loader:
+        print('train_loader')
+        print(batch.edge_attr.shape)
+        print(batch.edge_index.shape)
+        print(batch.z.shape)
+        print(batch.pos.shape)
         # Forward pass
         batch = batch.to(device)
         dipole_pred = dipole_model(batch.pos, batch.z, batch.edge_index, batch.edge_attr, batch.batch)
@@ -74,10 +79,15 @@ for epoch in range(100):
     quadrupole_model.eval()
     with torch.no_grad():
         for batch in valid_loader:
+            print('valid_loader')
+            print(batch.edge_attr.shape)
+            print(batch.edge_index.shape)
+            print(batch.z.shape)
+            print(batch.pos.shape)
             batch = batch.to(device)
-            dipole_pred = dipole_model(batch.x, batch.edge_index, batch.edge_attr, batch.batch)
-            quadrupole_pred = quadrupole_model(batch.x, batch.edge_index, batch.edge_attr, batch.batch)
-            
+
+            dipole_pred = dipole_model(batch.pos, batch.z, batch.edge_index, batch.edge_attr, batch.batch) #changed batch.x to batch.pos, batch.z
+            quadrupole_pred = quadrupole_model(batch.pos, batch.z, batch.edge_index, batch.edge_attr, batch.batch) #changed batch.x to batch.pos, batch.z
             # Compute loss
             dipole_loss = criterion(dipole_pred, batch.dipole)
             quadrupole_loss = criterion(quadrupole_pred, batch.quadrupole)
@@ -117,10 +127,14 @@ actuals_quadrupole, preds_quadrupole = [], []
 
 with torch.no_grad():
     for batch in test_loader:
+        print('test_loader')
+        print(batch.edge_attr.shape)
+        print(batch.edge_index.shape)
+        print(batch.z.shape)
+        print(batch.pos.shape)
         batch = batch.to(device)
-        dipole_pred = dipole_model(batch.x, batch.edge_index, batch.edge_attr, batch.batch)
-        quadrupole_pred = quadrupole_model(batch.x, batch.edge_index, batch.edge_attr, batch.batch)
-
+        dipole_pred = dipole_model(batch.pos, batch.z, batch.edge_index, batch.edge_attr, batch.batch) #changed batch.x to batch.pos, batch.z
+        quadrupole_pred = quadrupole_model(batch.pos, batch.z, batch.edge_index, batch.edge_attr, batch.batch) #changed batch.x to batch.pos, batch.z
         actuals_dipole.append(batch.dipole.cpu().numpy())
         preds_dipole.append(dipole_pred.cpu().numpy())
         actuals_quadrupole.append(batch.quadrupole.cpu().numpy())
