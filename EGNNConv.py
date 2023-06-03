@@ -5,11 +5,11 @@ from torch_geometric.nn import global_add_pool
 from torch.nn import functional as F
 
 class EGNNConv(MessagePassing):
-    def __init__(self, in_channels, out_channels, edge_dim, node_dim):
+    def __init__(self, in_channels, out_channels, edge_dim):
         super(EGNNConv, self).__init__(aggr='add')
         self.lin_node = torch.nn.Linear(in_channels, out_channels)
         self.lin_edge_attr = torch.nn.Linear(edge_dim, out_channels)
-        self.lin_edge_attr2 = torch.nn.Linear(edge_dim, node_dim)
+        self.lin_edge_attr2 = torch.nn.Linear(edge_dim, edge_dim)
         self.mlp = torch.nn.Sequential(
             torch.nn.Linear(out_channels, out_channels),
             torch.nn.ReLU(),
@@ -28,11 +28,11 @@ class EGNNConv(MessagePassing):
         return self.mlp(aggr_out)
 
 class EquivariantGNN(torch.nn.Module):
-    def __init__(self, hidden_channels, edge_dim, node_dim, num_node_types):
+    def __init__(self, hidden_channels, output_dim, edge_dim, num_node_types):
         super(EquivariantGNN, self).__init__()
-        self.egnn1 = EGNNConv(num_node_types + 3, hidden_channels, edge_dim, node_dim) # 3 for 3D position
-        self.egnn2 = EGNNConv(hidden_channels, hidden_channels, edge_dim, node_dim)
-        self.lin = torch.nn.Linear(hidden_channels, 1)
+        self.egnn1 = EGNNConv(num_node_types + 3, hidden_channels, edge_dim) # 3 for 3D position
+        self.egnn2 = EGNNConv(hidden_channels, hidden_channels, edge_dim)
+        self.lin = torch.nn.Linear(hidden_channels, output_dim)
         self.num_node_types = num_node_types
 
     def forward(self, pos, z, edge_index, edge_attr, batch):
