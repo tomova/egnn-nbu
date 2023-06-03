@@ -100,8 +100,8 @@ for epoch in range(100):
         print("Shape of batch.dipole before reshape: ", batch.dipole.shape)
         print("Shape of batch.quadrupole before reshape: ", batch.quadrupole.shape)
         # Reshape batch.dipole and batch.quadrupole
-        batch.dipole = batch.dipole.view(-1, 3)
-        batch.quadrupole = batch.quadrupole.view(-1, 6)
+        batch.dipole = batch.dipole.view(-1, output_dim_dipoles).to(device)
+        batch.quadrupole = batch.quadrupole.view(-1, output_dim_quadrupoles).to(device)
         print("Shape of batch.dipole after reshape: ", batch.dipole.shape)
         print("Shape of batch.quadrupole after reshape: ", batch.quadrupole.shape)
         # Forward pass
@@ -121,7 +121,7 @@ for epoch in range(100):
         total_loss = dipole_loss + quadrupole_loss
         total_loss.backward()
         optimizer.step()
-
+        optimizer.zero_grad()
         train_loss += total_loss.item()
 
     # Validation
@@ -129,6 +129,9 @@ for epoch in range(100):
     quadrupole_model.eval()
     with torch.no_grad():
         for batch in valid_loader:
+            batch.dipole = batch.dipole.view(-1, output_dim_dipoles).to(device)
+            batch.quadrupole = batch.quadrupole.view(-1, output_dim_quadrupoles).to(device)
+            
             batch = batch.to(device)
             dipole_pred = dipole_model(batch)
             quadrupole_pred = quadrupole_model(batch)
@@ -172,6 +175,9 @@ actuals_quadrupole, preds_quadrupole = [], []
 
 with torch.no_grad():
     for batch in test_loader:
+        batch.dipole = batch.dipole.view(-1, output_dim_dipoles).to(device)
+        batch.quadrupole = batch.quadrupole.view(-1, output_dim_quadrupoles).to(device)
+        
         batch = batch.to(device)
         dipole_pred = dipole_model(batch)
         quadrupole_pred = quadrupole_model(batch)
@@ -188,12 +194,11 @@ actuals_quadrupole = np.concatenate(actuals_quadrupole)
 preds_quadrupole = np.concatenate(preds_quadrupole)
 
 # Calculate metrics for dipoles
-mae_dipole = [mean_absolute_error(actuals_dipole[:, i], preds_dipole[:, i]) for i in range(output_dim_dipoles)]
-r2_dipole = [r2_score(actuals_dipole[:, i], preds_dipole[:, i]) for i in range(output_dim_dipoles)]
-
+mae_dipole = [mean_absolute_error(actuals_dipoles[:, i], preds_dipoles[:, i]) for i in range(output_dim_dipoles)]
+r2_dipole = [r2_score(actuals_dipoles[:, i], preds_dipoles[:, i]) for i in range(output_dim_dipoles)]
 # Calculate metrics for quadrupoles
-mae_quadrupole = [[mean_absolute_error(actuals_quadrupole[:, i, j], preds_quadrupole[:, i, j]) for j in range(output_dim_quadrupoles)] for i in range(output_dim_quadrupoles)]
-r2_quadrupole = [[r2_score(actuals_quadrupole[:, i, j], preds_quadrupole[:, i, j]) for j in range(output_dim_quadrupoles)] for i in range(output_dim_quadrupoles)]
+mae_quadrupole = [mean_absolute_error(actuals_quadrupoles[:, i], preds_quadrupoles[:, i]) for i in range(output_dim_quadrupoles)]
+r2_quadrupole = [r2_score(actuals_quadrupoles[:, i], preds_quadrupoles[:, i]) for i in range(output_dim_quadrupoles)]
 
 print(f'Dipole Model: MAE = {mae_dipole}, R^2 = {r2_dipole}')
 print(f'Quadrupole Model: MAE = {mae_quadrupole}, R^2 = {r2_quadrupole}')
