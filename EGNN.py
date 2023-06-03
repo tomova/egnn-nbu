@@ -27,10 +27,18 @@ class EquivariantGNN(torch.nn.Module):
         # Map atomic numbers to indices
         z_indices = torch.tensor([atomic_number_to_index[atomic_number] for atomic_number in data.z.cpu().numpy()]).to(device)
 
+        print("x shape before reshaping: ", data.pos.shape)
         x = torch.cat([data.pos, self.embedding(z_indices)], dim=-1)  # Combine position and atom type information
+        print("x shape mid: ", x.shape)
         x = x.reshape(1, *x.shape)
+        print("x shape after reshaping: ", x.shape)
+        print("edges shape before reshaping: ", data.edge_index.shape)
         edges = data.edge_index.reshape(1, *data.edge_index.shape)
+        print("edges shape after reshaping: ", edges.shape)
+
+        print("edge_attr shape before reshaping: ", data.edge_attr.shape)
         edge_attr = data.edge_attr.reshape(1, *data.edge_attr.shape)
+        print("edge_attr shape after reshaping: ", edge_attr.shape)
         # x = x.unsqueeze(0)
         # edges = data.edge_index.unsqueeze(0)
         # edge_attr = data.edge_attr.unsqueeze(0)
