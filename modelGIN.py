@@ -39,7 +39,7 @@ class GINNet(torch.nn.Module):
         self.fc1 = torch.nn.Linear(hidden_dim, output_dim)
         
         # Adding an embedding layer for atom types
-        self.embedding = nn.Embedding(len(atomic_number_to_index), num_node_features - 3)  # -3 as we have 3D coordinates already
+        self.embedding = torch.nn.Embedding(len(atomic_number_to_index), num_node_features - 3)  # -3 as we have 3D coordinates already
 
     def forward(self, data):
         z_indices = torch.tensor([atomic_number_to_index[atomic_number] for atomic_number in data.z.cpu().numpy()]).to(device)
