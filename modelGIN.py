@@ -14,8 +14,8 @@ class MyDataLoader(DataLoader):
         batch = super().collate(data_list)
 
         # Handle extra attributes here
-        batch.dipole = torch.stack([data.dipole for data in data_list])
-        batch.quadrupole = torch.stack([data.quadrupole for data in data_list])
+        batch.dipole = torch.stack([data.dipole.view(-1, output_dim_dipoles) for data in data_list])
+        batch.quadrupole = torch.stack([data.quadrupole.view(-1, output_dim_quadrupoles) for data in data_list])
 
         return batch
 
@@ -96,6 +96,9 @@ for epoch in range(100):
     dipole_model.train()
     quadrupole_model.train()
     for batch in train_loader:
+        # Print shapes of dipole and quadrupole tensors
+        print("Shape of batch.dipole: ", batch.dipole.shape)
+        print("Shape of batch.quadrupole: ", batch.quadrupole.shape)
         # Forward pass
         batch = batch.to(device)
         dipole_pred = dipole_model(batch)
