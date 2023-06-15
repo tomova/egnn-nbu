@@ -3,6 +3,8 @@ from torch_geometric.data import DataLoader
 from e3nn.nn import FullyConnectedNet
 from e3nn.o3 import FullyConnectedTensorProduct
 from QM93D_MM import QM93D
+from torch_geometric.data import Data, DataLoader
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class E3nnModel(torch.nn.Module):
@@ -18,12 +20,10 @@ class E3nnModel(torch.nn.Module):
         self.fc = FullyConnectedNet([3] + irreps_hidden + [3]) 
 
     def forward(self, data):
-        print("pos shape:", pos.shape)
-        print("z shape:", z.shape)
         pos = data.pos.unsqueeze(0)  # Add batch dimension
         z = data.z.float().unsqueeze(-1).unsqueeze(0)  # Add batch dimension
-        print("pos shape 2:", pos.shape)
-        print("z shape 2:", z.shape)
+        print("pos shape:", pos.shape)
+        print("z shape:", z.shape)
         x = self.tp(pos, z)
         x = x.squeeze(0)  # Remove batch dimension
         x = self.fc(x)
