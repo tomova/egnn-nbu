@@ -5,6 +5,7 @@ from e3nn.o3 import FullyConnectedTensorProduct
 from e3nn.o3 import Irreps
 from QM93D_MM import QM93D
 from torch_geometric.data import Data, DataLoader
+import torch.nn.functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
