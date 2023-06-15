@@ -12,9 +12,9 @@ class E3nnModel(torch.nn.Module):
     def __init__(self):
         super(E3nnModel, self).__init__()
 
-        self.fc_pos = FullyConnectedNet([3, 2])
-        self.fc_z = FullyConnectedNet([1, 2])
-        self.fc_out = FullyConnectedNet([4, 3])
+        self.fc_pos = FullyConnectedNet([3, 2], activations='relu')
+        self.fc_z = FullyConnectedNet([1, 2], activations='relu')
+        self.fc_out = FullyConnectedNet([2, 3])
 
     def forward(self, data):
         pos = self.fc_pos(data.pos)
