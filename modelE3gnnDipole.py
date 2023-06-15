@@ -12,22 +12,15 @@ class E3nnModel(torch.nn.Module):
     def __init__(self):
         super(E3nnModel, self).__init__()
 
-        irreps_in = [(1, (2, 1))]
-        irreps_in2 = Irreps([(1, (0, 1)), 1])
-        irreps_out = [(1, (1, 1))]
-        self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in2, irreps_out, shared_weights=False)
-
-        irreps_hidden = [2, 2]
-        self.fc = FullyConnectedNet([3] + irreps_hidden + [3]) 
+        self.fc_pos = FullyConnectedNet([3, 2])
+        self.fc_z = FullyConnectedNet([1, 2])
+        self.fc_out = FullyConnectedNet([4, 3])
 
     def forward(self, data):
-        pos = data.pos.unsqueeze(0)  # Add batch dimension
-        z = data.z.float().unsqueeze(-1).unsqueeze(0)  # Add batch dimension
-        print("pos shape:", pos.shape)
-        print("z shape:", z.shape)
-        x = self.tp(pos, z)
-        x = x.squeeze(0)  # Remove batch dimension
-        x = self.fc(x)
+        pos = self.fc_pos(data.pos)
+        z = self.fc_z(data.z.unsqueeze(-1).float())
+        x = pos * z  # Element-wise multiplication
+        x = self.fc_out(x)
         return x.sum(dim=-1)
     
 # Load data
