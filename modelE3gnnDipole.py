@@ -2,6 +2,7 @@ import torch
 from torch_geometric.data import DataLoader
 from e3nn.nn import FullyConnectedNet
 from e3nn.o3 import FullyConnectedTensorProduct
+from e3nn.o3 import Irreps
 from QM93D_MM import QM93D
 from torch_geometric.data import Data, DataLoader
 
@@ -12,7 +13,7 @@ class E3nnModel(torch.nn.Module):
         super(E3nnModel, self).__init__()
 
         irreps_in = [(1, (2, 1))]
-        irreps_in2 = [(1, (0, 1), 1)]  # Include the parity within the tuple
+        irreps_in2 = Irreps([(1, (0, 1, 1))])
         irreps_out = [(1, (1, 1))]
         self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in2, irreps_out, shared_weights=False)
 
