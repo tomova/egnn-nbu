@@ -23,7 +23,6 @@ class E3nnModel(torch.nn.Module):
     
 # Load data
 dataset = QM93D(root='data')
-dataset = dataset.to(device)
 
 # Split data into train, validation and test sets
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
