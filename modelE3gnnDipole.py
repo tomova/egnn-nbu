@@ -43,7 +43,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 loss_func = torch.nn.L1Loss()
 
 # Define the data loaders for each set
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=564, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
