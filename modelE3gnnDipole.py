@@ -18,7 +18,10 @@ class E3nnModel(torch.nn.Module):
         self.fc = FullyConnectedNet([3] + irreps_hidden + [3]) 
 
     def forward(self, data):
-        x = self.tp(data.pos, data.z.float().unsqueeze(-1))
+        pos = data.pos.unsqueeze(0)  # Add batch dimension
+        z = data.z.float().unsqueeze(-1).unsqueeze(0)  # Add batch dimension
+        x = self.tp(pos, z)
+        x = x.squeeze(0)  # Remove batch dimension
         x = self.fc(x)
         return x.sum(dim=-1)
     
