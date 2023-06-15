@@ -33,6 +33,8 @@ class E3nnModel(torch.nn.Module):
 # Load data
 dataset = QM93D(root='data')
 
+irreps_in2 = Irreps([(1, 0, 1)])
+
 # Split data into train, validation and test sets
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
 train_dataset = dataset[split_idx['train']]
