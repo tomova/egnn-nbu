@@ -9,7 +9,7 @@ class E3nnModel(torch.nn.Module):
     def __init__(self):
         super(E3nnModel, self).__init__()
 
-        irreps_in = [(1, (2, 0))]
+        irreps_in = [(1, (2, 1))]
         irreps_out = [(1, (0, 0))]
         self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in, irreps_out, shared_weights=False)
 
