@@ -1,10 +1,26 @@
 import torch
 from torch_geometric.data import DataLoader
-from torch.nn import MSELoss
-from e3nn.networks import GatedConvParityNetwork
+from e3nn.nn import FullyConnectedNet
+from e3nn.o3 import FullyConnectedTensorProduct
 from QM93D_MM import QM93D
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+class E3nnModel(torch.nn.Module):
+    def __init__(self):
+        super(E3nnModel, self).__init__()
+
+        irreps_in = [(1, (2, 0))]
+        irreps_out = [(1, (0, 0))]
+        self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in, irreps_out, shared_weights=False)
+
+        irreps_hidden = [2, 2]
+        self.fc = FullyConnectedNet([3] + irreps_hidden + [1])
+
+    def forward(self, data):
+        x = self.tp(data.pos)
+        x = self.fc(x)
+        return x.sum(dim=-1)
+    
 # Load data
 dataset = QM93D(root='data')
 dataset = dataset.to(device)
@@ -18,12 +34,11 @@ test_dataset = dataset[split_idx['test']]
 # Define the E(3) equivariant GNN model
 Rs_in = [(1, 0, 1)]
 Rs_out = [(1, 0, 1)]
-model = GatedConvParityNetwork(Rs_in, Rs_out, mul=6, lmax=2, layers=3)
-model = model.to(device)
+model = E3nnModel().to(device)
 
 # Define the optimizer and loss function
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-loss_func = MSELoss()
+loss_func = torch.nn.L1Loss()
 
 # Define the data loaders for each set
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
