@@ -10,11 +10,11 @@ class E3nnModel(torch.nn.Module):
         super(E3nnModel, self).__init__()
 
         irreps_in = [(1, (2, 1))]
-        irreps_out = [(1, (0, 0))]
+        irreps_out = [(1, (1, 1))]
         self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in, irreps_out, shared_weights=False)
 
         irreps_hidden = [2, 2]
-        self.fc = FullyConnectedNet([3] + irreps_hidden + [1])
+        self.fc = FullyConnectedNet([3] + irreps_hidden + [3]) 
 
     def forward(self, data):
         x = self.tp(data.pos)
