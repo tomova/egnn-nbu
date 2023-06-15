@@ -1,11 +1,7 @@
 import torch
 from torch_geometric.data import DataLoader
 from torch.nn import MSELoss
-from e3nn import rs
 from e3nn.networks import GatedConvParityNetwork
-from e3nn.non_linearities import rescaled_act
-from e3nn.point.data_helpers import DataPeriodicNeighbors
-from sklearn.metrics import mean_absolute_error, r2_score
 from QM93D_MM import QM93D
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
