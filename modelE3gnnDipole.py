@@ -45,11 +45,7 @@ class E3nnModel(torch.nn.Module):
         pos_transformed = self.lin(data.pos)  # [num_nodes, irreps_in_node_pos.dim]
         x = torch.cat([z_embedding, pos_transformed], dim=-1)  # [num_nodes, irreps_in.dim]
 
-        # Apply the tensor product layers
-        out = x
-        for tp_layer in self.tp_layers:
-            out = tp_layer(out, x)
-
+        out = self.tp(x, x)  # [num_nodes, irreps_out.dim]
         out = self.gate(out)  # [num_nodes, irreps_out.dim]
         out = self.fc(out)  # [num_nodes, 3]
 
