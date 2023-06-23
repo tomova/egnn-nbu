@@ -1,4 +1,7 @@
 import torch
+from torch_geometric.nn import global_add_pool
+from e3nn import o3, rs
+from torch_scatter import scatter_add
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import global_mean_pool
 from e3nn.nn import FullyConnectedNet
@@ -12,26 +15,34 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def swish(x):
     return x * torch.sigmoid(x)
 
+
 class E3nnModel(torch.nn.Module):
     def __init__(self):
         super(E3nnModel, self).__init__()
-        self.irreps_in = Irreps("1x0e + 1x1o")
-        self.irreps_hidden = Irreps("2x0e + 2x1o + 1x2e")
-        self.irreps_out = Irreps("1x0e")
 
-        self.tp = FullyConnectedTensorProduct(self.irreps_in, self.irreps_in, self.irreps_hidden)
-        self.fc = torch.nn.Linear(self.irreps_hidden.dim, self.irreps_out.dim)
-        
-        self.gate = Gate(self.irreps_hidden, self.irreps_hidden, self.irreps_hidden, [torch.sigmoid, swish])
+        irreps_in_node_attr = o3.Irreps("0e")
+        irreps_in_node_pos = o3.Irreps("1e")
+        irreps_in = irreps_in_node_attr + irreps_in_node_pos
+        irreps_out = o3.Irreps("1e")
+
+        self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim)  # embedding for 100 different atomic numbers
+        self.lin = torch.nn.Linear(irreps_in_node_pos.dim, irreps_in_node_pos.dim)
+
+        self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in, irreps_out, layers=3)
+        self.gate = Gate(irreps_out, irreps_out, act=swish)
+        self.fc = torch.nn.Linear(irreps_out.dim, 3)  # to match the 3D dipole moment
 
     def forward(self, data):
-        x = torch.cat([data.z.unsqueeze(-1).float(), data.pos], dim=-1)
-        x = self.tp(x, x)
-        x = F.relu(x)
-        x = self.gate(x)
-        x = self.fc(x)
-        x = global_mean_pool(x, data.batch)  # Pooling operation on a per-graph basis
-        return x
+        z_embedding = self.embed(data.z)  # [num_nodes, irreps_in_node_attr.dim]
+        pos_transformed = self.lin(data.pos)  # [num_nodes, irreps_in_node_pos.dim]
+        x = torch.cat([z_embedding, pos_transformed], dim=-1)  # [num_nodes, irreps_in.dim]
+
+        out = self.tp(x, x)  # [num_nodes, irreps_out.dim]
+        out = self.gate(out)  # [num_nodes, irreps_out.dim]
+        out = self.fc(out)  # [num_nodes, 3]
+
+        out = scatter_add(out, data.batch, dim=0)  # [num_graphs, 3]
+        return out
 
 
 # Load data
