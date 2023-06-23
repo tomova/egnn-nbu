@@ -79,6 +79,8 @@ for epoch in range(n_epochs):
         batch = batch.to(device)
         optimizer.zero_grad()
         out = model(batch)
+        print("Output shape:", out.shape)
+        print("Dipole shape:", batch.dipole.shape)
         loss = loss_func(out, batch.dipole)
         loss.backward()
         optimizer.step()
