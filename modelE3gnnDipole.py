@@ -7,6 +7,7 @@ from e3nn.o3 import Irreps
 from e3nn.nn import Gate
 from QM93D_MM import QM93D
 import torch.nn.functional as F
+from e3nn.nn import swish
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -19,7 +20,10 @@ class E3nnModel(torch.nn.Module):
 
         self.tp = FullyConnectedTensorProduct(self.irreps_in, self.irreps_in, self.irreps_hidden)
         self.fc = torch.nn.Linear(self.irreps_hidden.dim, self.irreps_out.dim)
-        self.gate = Gate(self.irreps_hidden, self.irreps_hidden, self.irreps_out)
+        act_gates = torch.sigmoid
+        act_field = swish
+        irreps_gated = self.irreps_out
+        self.gate = Gate(self.irreps_hidden, self.irreps_hidden, irreps_gated, act_gates, act_field)
 
 
     def forward(self, data):
