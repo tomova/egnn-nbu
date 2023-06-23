@@ -1,11 +1,10 @@
 import torch
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 from torch_geometric.nn import global_mean_pool
 from e3nn.nn import FullyConnectedNet
 from e3nn.o3 import FullyConnectedTensorProduct
 from e3nn.o3 import Irreps
 from QM93D_MM import QM93D
-from torch_geometric.data import Data, DataLoader
 import torch.nn.functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -28,6 +27,10 @@ class E3nnModel(torch.nn.Module):
     
 # Load data
 dataset = QM93D(root='data')
+
+for data in dataset:
+    data.dipole = data.dipole.view(1, 3)
+
 
 for i in range(10):
     data = dataset[i]
