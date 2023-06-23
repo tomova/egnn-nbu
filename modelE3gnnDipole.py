@@ -22,8 +22,7 @@ class E3nnModel(torch.nn.Module):
         self.tp = FullyConnectedTensorProduct(self.irreps_in, self.irreps_in, self.irreps_hidden)
         self.fc = torch.nn.Linear(self.irreps_hidden.dim, self.irreps_out.dim)
         irreps_gated = self.irreps_out
-        self.gate = Gate(self.irreps_hidden, self.irreps_hidden, irreps_gated, torch.sigmoid, swish)
-
+        self.gate = Gate(self.irreps_hidden.dim, [(self.irreps_hidden.dim, torch.sigmoid), (self.irreps_hidden.dim, swish)], self.irreps_out)
 
     def forward(self, data):
         x = torch.cat([data.z.unsqueeze(-1).float(), data.pos], dim=-1)
