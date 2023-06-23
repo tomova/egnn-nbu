@@ -20,16 +20,24 @@ class E3nnModel(torch.nn.Module):
     def __init__(self):
         super(E3nnModel, self).__init__()
 
-        irreps_in_node_attr = o3.Irreps("0e")
-        irreps_in_node_pos = o3.Irreps("1e")
+        irreps_in_node_attr = Irreps("0e")
+        irreps_in_node_pos = Irreps("1e")
         irreps_in = irreps_in_node_attr + irreps_in_node_pos
-        irreps_out = o3.Irreps("1e")
+        irreps_out = Irreps("1e")
 
         self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim)  # embedding for 100 different atomic numbers
         self.lin = torch.nn.Linear(irreps_in_node_pos.dim, irreps_in_node_pos.dim)
 
-        self.tp = FullyConnectedTensorProduct(irreps_in, irreps_in, irreps_out, layers=3)
-        self.gate = Gate(irreps_out, irreps_out, act=swish)
+        # Define the intermediate representations for the tensor product layers
+        intermediate_irreps = [Irreps("1e")] * 3
+
+        # Create multiple tensor product layers
+        self.tp_layers = torch.nn.ModuleList()
+        self.tp_layers.append(FullyConnectedTensorProduct(irreps_in, irreps_in, intermediate_irreps[0]))
+        for i in range(1, len(intermediate_irreps)):
+            self.tp_layers.append(FullyConnectedTensorProduct(intermediate_irreps[i-1], irreps_in, intermediate_irreps[i]))
+
+        self.gate = FullyConnectedTensorProduct(intermediate_irreps[-1], irreps_in, irreps_out)
         self.fc = torch.nn.Linear(irreps_out.dim, 3)  # to match the 3D dipole moment
 
     def forward(self, data):
@@ -37,13 +45,16 @@ class E3nnModel(torch.nn.Module):
         pos_transformed = self.lin(data.pos)  # [num_nodes, irreps_in_node_pos.dim]
         x = torch.cat([z_embedding, pos_transformed], dim=-1)  # [num_nodes, irreps_in.dim]
 
-        out = self.tp(x, x)  # [num_nodes, irreps_out.dim]
+        # Apply the tensor product layers
+        out = x
+        for tp_layer in self.tp_layers:
+            out = tp_layer(out, x)
+
         out = self.gate(out)  # [num_nodes, irreps_out.dim]
         out = self.fc(out)  # [num_nodes, 3]
 
         out = scatter_add(out, data.batch, dim=0)  # [num_graphs, 3]
         return out
-
 
 # Load data
 dataset = QM93D(root='data')
