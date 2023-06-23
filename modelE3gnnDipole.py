@@ -1,6 +1,6 @@
 import torch
 from torch_geometric.nn import global_add_pool
-from e3nn import o3, rs
+from e3nn import o3
 from torch_scatter import scatter_add
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import global_mean_pool
