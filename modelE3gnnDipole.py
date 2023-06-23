@@ -90,7 +90,9 @@ for epoch in range(n_epochs):
         out = model(batch)
         print("Output shape:", out.shape)
         print("Dipole shape:", batch.dipole.shape)
-        loss = loss_func(out, batch.dipole)
+        target = batch.dipole.view(-1, 3)
+        print("target shape:", target.shape)
+        loss = loss_func(out, target)
         loss.backward()
         optimizer.step()
 
