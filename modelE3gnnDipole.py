@@ -53,7 +53,7 @@ class E3nnModel(torch.nn.Module):
         out = self.gate(out, x)  # [num_nodes, irreps_out.dim]
         out = self.fc(out)  # [num_nodes, 3]
 
-        out = torch_scatter.scatter_add(out, data.batch, dim=0)  # [num_graphs, 3]
+        out = scatter_add(out, data.batch, dim=0)  # [num_graphs, 3]
         return out
 
 # Load data
