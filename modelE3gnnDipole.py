@@ -22,7 +22,8 @@ class E3nnModel(torch.nn.Module):
         z = F.relu(self.fc_z(data.z.unsqueeze(-1).float()))
         x = pos * z  # Element-wise multiplication
         x = self.fc_out(x)
-        return x  # Do not sum over the last dimension
+        x = x.mean(dim=0, keepdim=True)  # Take the mean over the atom dimension
+        return x
 
     
 # Load data
