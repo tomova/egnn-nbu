@@ -69,14 +69,16 @@ def evaluate(model, data_loader):
         for data in data_loader:
             data = data.to(device)
             prediction = model(data)
-            error = prediction - data.dipole  # Use data.dipole as target
+            target = data.dipole.view(-1, 3)  # Reshape target
+            error = prediction - target  # Use reshaped data.dipole as target
             total_abs_error += torch.abs(error).sum().item()
             total_sq_error += torch.pow(error, 2).sum().item()
-            total_variance += torch.var(data.dipole, unbiased=False).item() * (data.dipole.shape[0] - 1)  # Use data.dipole
-            total_examples += data.dipole.shape[0]
+            total_variance += torch.var(target, unbiased=False).item() * (target.shape[0] - 1)  # Use reshaped data.dipole
+            total_examples += target.shape[0]
     mae = total_abs_error / total_examples
     r2 = 1 - (total_sq_error / total_variance)
     return mae, r2
+
 
 # Training loop
 n_epochs = 1000
