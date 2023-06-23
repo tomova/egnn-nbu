@@ -1,5 +1,6 @@
 import torch
 from torch_geometric.data import DataLoader
+from torch_geometric.nn import global_mean_pool
 from e3nn.nn import FullyConnectedNet
 from e3nn.o3 import FullyConnectedTensorProduct
 from e3nn.o3 import Irreps
@@ -22,9 +23,8 @@ class E3nnModel(torch.nn.Module):
         z = F.relu(self.fc_z(data.z.unsqueeze(-1).float()))
         x = pos * z  # Element-wise multiplication
         x = self.fc_out(x)
-        x = x.mean(dim=0, keepdim=True)  # Take the mean over the atom dimension
+        x = global_mean_pool(x, data.batch)  # Pooling operation on a per-graph basis
         return x
-
     
 # Load data
 dataset = QM93D(root='data')
