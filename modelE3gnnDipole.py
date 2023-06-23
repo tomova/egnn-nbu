@@ -22,7 +22,8 @@ class E3nnModel(torch.nn.Module):
         z = F.relu(self.fc_z(data.z.unsqueeze(-1).float()))
         x = pos * z  # Element-wise multiplication
         x = self.fc_out(x)
-        return x.sum(dim=-1)
+        return x  # Do not sum over the last dimension
+
     
 # Load data
 dataset = QM93D(root='data')
@@ -58,11 +59,11 @@ def evaluate(model, data_loader):
         for data in data_loader:
             data = data.to(device)
             prediction = model(data)
-            error = prediction - data.y
+            error = prediction - data.dipole  # Use data.dipole as target
             total_abs_error += torch.abs(error).sum().item()
             total_sq_error += torch.pow(error, 2).sum().item()
-            total_variance += torch.var(data.y, unbiased=False).item() * (data.y.shape[0] - 1)  # Multiply by (n - 1) because torch.var divides by n
-            total_examples += data.y.shape[0]
+            total_variance += torch.var(data.dipole, unbiased=False).item() * (data.dipole.shape[0] - 1)  # Use data.dipole
+            total_examples += data.dipole.shape[0]
     mae = total_abs_error / total_examples
     r2 = 1 - (total_sq_error / total_variance)
     return mae, r2
@@ -77,7 +78,7 @@ for epoch in range(n_epochs):
         batch = batch.to(device)
         optimizer.zero_grad()
         out = model(batch)
-        loss = loss_func(out, batch.y)
+        loss = loss_func(out, batch.dipole)
         loss.backward()
         optimizer.step()
 
