@@ -20,16 +20,20 @@ class E3nnModel(torch.nn.Module):
     def __init__(self):
         super(E3nnModel, self).__init__()
 
-        irreps_in_node_attr = Irreps("0e")
+        irreps_in_node_attr = Irreps("0e+0e")
         irreps_in_node_pos = Irreps("1e")
         irreps_in = irreps_in_node_attr + irreps_in_node_pos
         irreps_out = Irreps("1e")
 
         self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim)  # embedding for 100 different atomic numbers
-        self.lin = torch.nn.Linear(irreps_in_node_pos.dim, irreps_in_node_pos.dim)
+        self.lin = torch.nn.Sequential(
+            torch.nn.Linear(irreps_in_node_pos.dim, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, irreps_in_node_pos.dim)
+        )
 
         # Define the intermediate representations for the tensor product layers
-        intermediate_irreps = [Irreps("1e")] * 3
+        intermediate_irreps = [Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o")]
 
         # Create multiple tensor product layers
         self.tp_layers = torch.nn.ModuleList()
@@ -55,6 +59,7 @@ class E3nnModel(torch.nn.Module):
 
         out = scatter_add(out, data.batch, dim=0)  # [num_graphs, 3]
         return out
+
 
 # Load data
 dataset = QM93D(root='data')
