@@ -87,7 +87,7 @@ loss_funcMSE = torch.nn.MSELoss()
 loss_funcL1 = torch.nn.L1Loss()
 
 # Define the data loaders for each set
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
