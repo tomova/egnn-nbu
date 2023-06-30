@@ -79,12 +79,12 @@ model = E3nnModel().to(device)
 
 # Define the optimizer and loss function
 optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=50)
 loss_funcMSE = torch.nn.MSELoss()
 loss_funcL1 = torch.nn.L1Loss()
 
 # Define the data loaders for each set
-train_loader = DataLoader(train_dataset, batch_size=564, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
