@@ -78,7 +78,7 @@ Rs_out = [(1, 0, 1)]
 model = E3nnModel().to(device)
 
 # Define the optimizer and loss function
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
 loss_funcMSE = torch.nn.MSELoss()
 loss_funcL1 = torch.nn.L1Loss()
