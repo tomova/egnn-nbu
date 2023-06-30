@@ -117,7 +117,9 @@ n_epochs = 1000
 validation_interval = 20
 best_val_loss = float('inf')
 
-
+# Initialize the patience counter
+patience_counter = 0
+patience_limit = 100
 
 for epoch in range(n_epochs):
     model.train()
@@ -135,9 +137,21 @@ for epoch in range(n_epochs):
         print(f"Epoch: {epoch}, Val MAE: {val_mae}, Val MSE: {val_mse}, Val R2: {val_r2}, Best Val Loss: {best_val_loss}")
         val_loss = val_mse # Use MSE for validation loss
         scheduler.step(val_loss)
+
+        # If the validation loss improved, save the model and reset the patience counter
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(model.state_dict(), "best_modelE3D.pt")
+            patience_counter = 0
+
+        # If the validation loss did not improve, increment the patience counter
+        else:
+            patience_counter += 1
+
+        # If the patience limit is reached, stop the training
+        if patience_counter >= patience_limit:
+            print("Early stopping due to no improvement in validation loss.")
+            break
 
 # Load the best model
 model.load_state_dict(torch.load("best_modelE3D.pt"))
