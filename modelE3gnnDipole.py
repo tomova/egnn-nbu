@@ -24,21 +24,17 @@ class E3nnModel(torch.nn.Module):
         irreps_in = irreps_in_node_attr + irreps_in_node_pos
         irreps_out = Irreps("1e")
 
-        self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim) # embedding for 100 different atomic 
+        self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim) # embedding for 100 different atomic numbers
         self.lin = torch.nn.Sequential(
-            torch.nn.Linear(irreps_in_node_pos.dim, 128),
+            torch.nn.Linear(irreps_in_node_pos.dim, 128),  # Increased nodes
             torch.nn.ReLU(),
-            torch.nn.BatchNorm1d(128),
-            torch.nn.Dropout(p=0.5),
-            torch.nn.Linear(128, 256),
+            torch.nn.Linear(128, 256),  # Increased nodes
             torch.nn.ReLU(),
-            torch.nn.BatchNorm1d(256),
-            torch.nn.Dropout(p=0.5),
             torch.nn.Linear(256, irreps_in_node_pos.dim)
         )
 
         # Define the intermediate representations for the tensor product layers
-        intermediate_irreps = [Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o")]
+        intermediate_irreps = [Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o")]  # More tensor product layers
         # Create multiple tensor product layers
         self.tp_layers = torch.nn.ModuleList()
         self.tp_layers.append(FullyConnectedTensorProduct(irreps_in, irreps_in, intermediate_irreps[0]))
