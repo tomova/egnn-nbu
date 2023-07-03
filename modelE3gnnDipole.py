@@ -24,18 +24,18 @@ class E3nnModel(torch.nn.Module):
         irreps_in = irreps_in_node_attr + irreps_in_node_pos
         irreps_out = Irreps("1e")
 
-        #self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim) # embedding for 100 different atomic numbers
-        self.embed = torch.nn.Embedding(100, 256) # embedding for 100 different atomic numbers
+        self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim) # embedding for 100 different atomic numbers
 
         self.lin = torch.nn.Sequential(
-            torch.nn.Linear(irreps_in_node_pos.dim, 256),  # Increased nodes
+            torch.nn.Linear(irreps_in_node_pos.dim, 256), 
             torch.nn.ReLU(),
-            torch.nn.Linear(256, 256),  # Increased nodes
+            torch.nn.Linear(256, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 256),
             torch.nn.ReLU(),
             torch.nn.Linear(256, irreps_in_node_pos.dim)
         )
 
-        # Change the dimension of the intermediate representations to match the new size of x
         intermediate_irreps = [Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o")]
 
         self.tp_layers = torch.nn.ModuleList()
