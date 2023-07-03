@@ -30,13 +30,13 @@ class E3nnModel(torch.nn.Module):
         self.lin = torch.nn.Sequential(
             torch.nn.Linear(irreps_in_node_pos.dim, 256),  # Increased nodes
             torch.nn.ReLU(),
-            torch.nn.Linear(256, 512),  # Increased nodes
+            torch.nn.Linear(256, 256),  # Increased nodes
             torch.nn.ReLU(),
-            torch.nn.Linear(512, 256)
+            torch.nn.Linear(256, irreps_in_node_pos.dim)
         )
 
         # Change the dimension of the intermediate representations to match the new size of x
-        intermediate_irreps = [Irreps("256e+256o"), Irreps("256e+256o"), Irreps("256e+256o"), Irreps("256e+256o"), Irreps("256e+256o")]
+        intermediate_irreps = [Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o")]
 
         self.tp_layers = torch.nn.ModuleList()
         self.tp_layers.append(FullyConnectedTensorProduct(irreps_in, irreps_in, intermediate_irreps[0]))
@@ -44,17 +44,6 @@ class E3nnModel(torch.nn.Module):
             self.tp_layers.append(FullyConnectedTensorProduct(intermediate_irreps[i-1], irreps_in, intermediate_irreps[i]))
 
         self.gate = FullyConnectedTensorProduct(intermediate_irreps[-1], irreps_in, irreps_out)
-
-
-        # Define the intermediate representations for the tensor product layers
-        #intermediate_irreps = [Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o"), Irreps("1e+1o")]  # More tensor product layers
-        # Create multiple tensor product layers
-        #self.tp_layers = torch.nn.ModuleList()
-        #self.tp_layers.append(FullyConnectedTensorProduct(irreps_in, irreps_in, intermediate_irreps[0]))
-        #for i in range(1, len(intermediate_irreps)):
-        #    self.tp_layers.append(FullyConnectedTensorProduct(intermediate_irreps[i-1], irreps_in, intermediate_irreps[i]))
-
-        #self.gate = FullyConnectedTensorProduct(intermediate_irreps[-1], irreps_in, irreps_out)
         self.fc = torch.nn.Linear(irreps_out.dim, 3) # to match the 3D dipole moment
 
     def forward(self, data):
