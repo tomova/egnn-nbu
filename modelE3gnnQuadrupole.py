@@ -15,26 +15,24 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def swish(x):
     return x * torch.sigmoid(x)
 
-class E3nnModel(torch.nn.Module):
+class E3nnModelQ(torch.nn.Module):
     def __init__(self):
-        super(E3nnModel, self).__init__()
+        super(E3nnModelQ, self).__init__()
 
         irreps_in_node_attr = Irreps("0e+0e")
         irreps_in_node_pos = Irreps("1e")
         irreps_in = irreps_in_node_attr + irreps_in_node_pos
-        irreps_out = Irreps("0e+1e+2e+0o+1o+2o")
+        irreps_out = Irreps("0e+1e+2e+0o+1o+2o") #1e+1o+2e+2o
 
         self.embed = torch.nn.Embedding(100, irreps_in_node_attr.dim) # embedding for 100 different atomic 
         self.lin = torch.nn.Sequential(
-            torch.nn.Linear(irreps_in_node_pos.dim, 128),
+            torch.nn.Linear(irreps_in_node_pos.dim, 512),
             torch.nn.ReLU(),
-            torch.nn.BatchNorm1d(128),
-            torch.nn.Dropout(p=0.5),
-            torch.nn.Linear(128, 256),
+            torch.nn.Linear(512, 1024),
             torch.nn.ReLU(),
-            torch.nn.BatchNorm1d(256),
-            torch.nn.Dropout(p=0.5),
-            torch.nn.Linear(256, irreps_in_node_pos.dim)
+            torch.nn.Linear(1024, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, irreps_in_node_pos.dim)
         )
 
         # Define the intermediate representations for the tensor product layers
@@ -78,10 +76,10 @@ test_dataset = dataset[split_idx['test']]
 Rs_in = [(1, 0, 1)]
 Rs_out = [(1, 0, 1)]
 # Define the E(3) equivariant GNN model
-model = E3nnModel().to(device)
+model = E3nnModelQ().to(device)
 
 # Define the optimizer and loss function
-optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=50)
 loss_funcMSE = torch.nn.MSELoss()
 loss_funcL1 = torch.nn.L1Loss()
@@ -157,7 +155,7 @@ for epoch in range(n_epochs):
             break
 
 # Load the best model
-model.load_state_dict(torch.load("best_modelE3D.pt"))
+model.load_state_dict(torch.load("best_modelE3Q.pt"))
 #-------------------
     
 
