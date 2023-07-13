@@ -74,7 +74,7 @@ class GatedConvModel(torch.nn.Module):
             8,         # num_neighbors
         )
 
-        self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e+16x1o")
+        self.gate = Gate("16x0e", [torch.tanh], "32x0e", [torch.sigmoid], "16x1e+16x1o")
 
         self.fc = torch.nn.Linear(64, 3)  # to match the 3D dipole moment
 
