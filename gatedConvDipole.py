@@ -3,10 +3,13 @@ import torch
 from torch_scatter import scatter_add
 from torch_geometric.loader import DataLoader
 from e3nn import o3
-from e3nn.nn import Gate
-from e3nn.o3 import FullyConnectedTensorProduct
 from QM93D_MM import QM93D
 import torch.nn.functional as F
+from torch import nn
+from e3nn.nn import FullyConnectedNet, Gate
+from e3nn.o3 import FullyConnectedTensorProduct, Linear
+from torch_geometric.nn import MessagePassing
+from torch_cluster import radius_graph
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Convolution(torch.nn.Module):
@@ -47,47 +50,44 @@ class Convolution(torch.nn.Module):
         return c_s * s + c_x * x
 
 class GatedConvModel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, n_atom_basis=16, n_filters=32, n_gaussians=32, n_outputs=3, max_radius=1.0, h=0.2, cutoff=3.5):
         super(GatedConvModel, self).__init__()
+        self.n_atom_basis = n_atom_basis
+        self.n_filters = n_filters
+        self.max_radius = max_radius
+        self.h = h
+        self.cutoff = cutoff
 
-        self.node_features = torch.nn.Sequential(
-            torch.nn.Linear(1, 32),
-            torch.nn.ReLU(),
-            torch.nn.Linear(32, 64)
+        self.node_features = nn.Linear(3, n_atom_basis)
+
+        self.filter_network = FullyConnectedNet(
+            [n_atom_basis] + 3 * [n_filters] + [n_filters * n_gaussians],
+            h=h,
         )
+        irreps_gates = [(1, (0, 0))]  # gates are scalars
+        irreps_out = n_atom_basis * [(1, (0, 0))]  # atom centered basis functions
 
-        self.edge_network = torch.nn.Sequential(
-            torch.nn.Linear(1, 32),
-            torch.nn.ReLU(),
-            torch.nn.Linear(32, 64)
+        self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e")
+
+        self.atom_wise = nn.Sequential(
+            nn.BatchNorm1d(n_atom_basis),
+            nn.Linear(n_atom_basis, n_outputs),
+            nn.LogSoftmax(dim=1),
         )
-
-        # Define the convolution
-        self.conv = Convolution(
-            '16x0o',   # irreps_in
-            '1x0e',    # irreps_node_attr
-            '1x0e',    # irreps_edge_attr
-            '16x0o',   # irreps_out
-            1,         # number_of_edge_features
-            3,         # radial_layers
-            64,        # radial_neurons
-            8,         # num_neighbors
-        )
-
-        self.gate = Gate("16x0e", [torch.tanh], "32x0e", [torch.sigmoid], "16x1e+16x1o")
-
-        self.fc = torch.nn.Linear(64, 3)  # to match the 3D dipole moment
 
     def forward(self, data):
-        x = self.node_features(data.x.view(-1, 1))
-        edge_attr = self.edge_network(data.edge_attr.view(-1, 1))
+        x = self.node_features(data.pos)
 
-        # Apply convolution
-        x = self.conv(x, data.edge_index, edge_attr)
+        edge_index = radius_graph(data.pos, r=self.cutoff, batch=None, loop=True)
 
-        out = self.gate(x)
-        out = scatter_add(out, data.batch, dim=0)
-        return self.fc(out)
+        # Embed edge distances to some higher dimensional space
+        edge_emb = self.filter_network(edge_index)
+
+        x = self.gate(x, edge_index, edge_emb)
+
+        out = self.atom_wise(x)
+
+        return out
 
 # Load data
 dataset = QM93D(root='data')
