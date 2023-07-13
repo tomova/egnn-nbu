@@ -1,16 +1,50 @@
+
 import torch
 from torch_scatter import scatter_add
 from torch_geometric.loader import DataLoader
 from e3nn import o3
-from e3nn.nn import Convolution, Activation, Extract
-from e3nn.util.jit import compile_mode
-from e3nn.radial import CosineBasisModel
-from e3nn.kernel import Kernel
+from e3nn.nn import Gate
+from e3nn.o3 import FullyConnectedTensorProduct
 from QM93D_MM import QM93D
 import torch.nn.functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+class Convolution(torch.nn.Module):
+    def __init__(self, irreps_in, irreps_node_attr, irreps_edge_attr, irreps_out, number_of_edge_features, radial_layers, radial_neurons, num_neighbors):
+        super().__init__()
+        self.irreps_in = o3.Irreps(irreps_in)
+        self.irreps_node_attr = o3.Irreps(irreps_node_attr)
+        self.irreps_edge_attr = o3.Irreps(irreps_edge_attr)
+        self.irreps_out = o3.Irreps(irreps_out)
+        self.num_neighbors = num_neighbors
 
+        self.sc = o3.FullyConnectedTensorProduct(self.irreps_in, self.irreps_node_attr, self.irreps_out)
+        self.lin1 = o3.FullyConnectedTensorProduct(self.irreps_in, self.irreps_node_attr, self.irreps_in)
+        self.lin2 = o3.FullyConnectedTensorProduct(self.irreps_in, self.irreps_node_attr, self.irreps_out)
+
+        self.fc = torch.nn.Sequential(
+            torch.nn.Linear(number_of_edge_features, radial_neurons),
+            torch.nn.SiLU(),
+            torch.nn.Linear(radial_neurons, self.irreps_in.dim * self.irreps_edge_attr.dim * self.irreps_out.dim)
+        )
+
+    def forward(self, node_input, node_attr, edge_src, edge_dst, edge_features) -> torch.Tensor:
+        x = node_input
+        edge_features = self.fc(edge_features)
+        edge_features = edge_features.view(-1, self.irreps_in.dim, self.irreps_edge_attr.dim, self.irreps_out.dim)
+
+        s = self.sc(node_input, node_attr)
+        x = self.lin1(node_input, node_attr)
+
+        x = torch.einsum('nci,neio->nceo', x[edge_src], edge_features)
+        x = scatter(x, edge_dst, dim=0, dim_size=node_input.shape[0])
+
+        x = self.lin2(x.div(self.num_neighbors**0.5), node_attr)
+
+        c_s, c_x = math.sin(math.pi / 8), math.cos(math.pi / 8)
+        m = self.sc.output_mask
+        c_x = (1 - m) + c_x * m
+        return c_s * s + c_x * x
 
 class GatedConvModel(torch.nn.Module):
     def __init__(self):
@@ -28,19 +62,21 @@ class GatedConvModel(torch.nn.Module):
             torch.nn.Linear(32, 64)
         )
 
-        # Define the radial model
-        R = o3.Irreps('0e + 1o').dim
-        radial_model = CosineBasisModel(R, max_radius=1.0, number_of_basis=3)
-
-        # Define the kernel
-        kernel = Kernel(radial_model)
-
         # Define the convolution
-        self.conv = Convolution(kernel)
+        self.conv = Convolution(
+            '16x0o',   # irreps_in
+            '1x0e',    # irreps_node_attr
+            '1x0e',    # irreps_edge_attr
+            '16x0o',   # irreps_out
+            1,         # number_of_edge_features
+            3,         # radial_layers
+            64,        # radial_neurons
+            8,         # num_neighbors
+        )
 
         self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e+16x1o")
 
-        self.fc = torch.nn.Linear(64, 3) # to match the 3D dipole moment
+        self.fc = torch.nn.Linear(64, 3)  # to match the 3D dipole moment
 
     def forward(self, data):
         x = self.node_features(data.x.view(-1, 1))
