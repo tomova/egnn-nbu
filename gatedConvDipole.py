@@ -1,11 +1,16 @@
 import torch
 from torch_scatter import scatter_add
 from torch_geometric.loader import DataLoader
-from e3nn.networks import GatedConvParityNetwork
+from e3nn import o3
+from e3nn.nn import Convolution, Activation, Extract
+from e3nn.util.jit import compile_mode
+from e3nn.radial import CosineBasisModel
+from e3nn.kernel import Kernel
 from QM93D_MM import QM93D
 import torch.nn.functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class GatedConvModel(torch.nn.Module):
     def __init__(self):
@@ -23,22 +28,28 @@ class GatedConvModel(torch.nn.Module):
             torch.nn.Linear(32, 64)
         )
 
-        self.gnn = GatedConvParityNetwork(
-            irreps_node_input="0e",
-            irreps_node_output="1e",
-            irreps_node_hidden="1e",
-            irreps_edge_attr="1e",
-            layers=4,
-            max_radius=1.0,
-            number_of_basis=3,
-        )
+        # Define the radial model
+        R = o3.Irreps('0e + 1o').dim
+        radial_model = CosineBasisModel(R, max_radius=1.0, number_of_basis=3)
+
+        # Define the kernel
+        kernel = Kernel(radial_model)
+
+        # Define the convolution
+        self.conv = Convolution(kernel)
+
+        self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e+16x1o")
 
         self.fc = torch.nn.Linear(64, 3) # to match the 3D dipole moment
 
     def forward(self, data):
         x = self.node_features(data.x.view(-1, 1))
         edge_attr = self.edge_network(data.edge_attr.view(-1, 1))
-        out = self.gnn(x, data.edge_index, edge_attr)
+
+        # Apply convolution
+        x = self.conv(x, data.edge_index, edge_attr)
+
+        out = self.gate(x)
         out = scatter_add(out, data.batch, dim=0)
         return self.fc(out)
 
