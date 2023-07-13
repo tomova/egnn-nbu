@@ -1,7 +1,7 @@
 import torch
 from torch_scatter import scatter_add
 from torch_geometric.loader import DataLoader
-from e3nn.nn import GatedConvParityNetwork
+from e3nn.networks import GatedConvParityNetwork
 from QM93D_MM import QM93D
 import torch.nn.functional as F
 
