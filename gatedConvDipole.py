@@ -78,17 +78,21 @@ class GatedConvModel(torch.nn.Module):
 
     def forward(self, data):
         x = self.node_features(data.pos)
-
         edge_index = radius_graph(data.pos, r=self.cutoff, batch=None, loop=True)
+    
+        # Calculate pairwise distance for each edge
+        pairwise_dist = torch.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1, keepdim=True)
 
-        # Embed edge distances to some higher dimensional space
-        edge_emb = self.filter_network(edge_index)
+        # Add distance as edge attribute
+        edge_attr = pairwise_dist if data.edge_attr is None else torch.cat([data.edge_attr, pairwise_dist], dim=-1)
 
+        # Edge embedding
+        edge_emb = self.filter_network(edge_attr)
+    
         x = self.gate(x, edge_index, edge_emb)
-
         out = self.atom_wise(x)
-
         return out
+
 
 # Load data
 dataset = QM93D(root='data')
