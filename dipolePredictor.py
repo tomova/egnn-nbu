@@ -65,7 +65,7 @@ def train():
     model.train()
     for data in train_loader:
         # Use dipole as target
-        y_true = data.dipole
+        y_true = data.dipole.view(-1, 3)
         optimizer.zero_grad()
         out = model(data)
         loss = F.mse_loss(out, y_true)  # Mean Squared Error as loss function
@@ -79,7 +79,7 @@ def test(loader):
     for data in loader:
         out = model(data)
         pred = out.detach()  # Detaching the output from computation graph
-        y_true.append(data.dipole)
+        y_true.append(data.dipole.view(-1, 3))
         y_pred.append(pred)
     y_true = torch.cat(y_true, dim=0)
     y_pred = torch.cat(y_pred, dim=0)
