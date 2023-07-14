@@ -23,23 +23,18 @@ class DipolePredictor(torch.nn.Module):
 
         x = self.conv1(x, edge_index, edge_attr)
         x = F.relu(x)
-        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.dropout(x, p=0.1, training=self.training)
 
         x = self.conv2(x, edge_index, edge_attr)
         x = F.relu(x)
 
-        print(f"Before pooling: {x.shape}")
-
         x = global_mean_pool(x, data.batch)  # Global pooling
-        print(f"After pooling: {x.shape}")
 
         x = F.relu(self.fc1(x))
-        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.dropout(x, p=0.1, training=self.training)
         x = self.fc2(x)
 
-        print(f"Final output: {x.shape}")
-
-        return x  # No need to reshape here anymore  return x.view(-1, 3)
+        return x
 
 # Usage
 model = DipolePredictor()
