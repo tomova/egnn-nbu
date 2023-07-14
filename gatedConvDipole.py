@@ -84,9 +84,14 @@ class GatedConvModel(torch.nn.Module):
         # Edge embedding
         edge_emb = self.filter_network(pairwise_dist)
 
-        x = self.gate(x, edge_index, edge_emb)
+        # Aggregating edge embeddings
+        index, counts = torch.unique(edge_index[0], return_counts=True)
+        x += edge_emb.sum(dim=0).index_select(0, index).div(counts.view(-1, 1))
+
+        x = self.gate(x)
         out = self.atom_wise(x)
         return out
+
 
 
 # Load data
