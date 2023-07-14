@@ -3,6 +3,9 @@ from torch.nn import Linear
 import torch.nn.functional as F
 from torch_geometric.nn import GraphConv, global_mean_pool
 from sklearn.metrics import r2_score
+from QM93D_MM import QM93D
+from torch_geometric.loader import DataLoader
+
 
 class DipolePredictor(torch.nn.Module):
     def __init__(self):
@@ -34,6 +37,22 @@ class DipolePredictor(torch.nn.Module):
 # Usage
 model = DipolePredictor()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+# Load data
+dataset = QM93D(root='data')
+
+# for data in dataset:
+ #    data.dipole = data.dipole.view(1, 3)
+
+# Split data into train, validation and test sets
+split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
+train_dataset = dataset[split_idx['train']]
+val_dataset = dataset[split_idx['valid']]
+test_dataset = dataset[split_idx['test']]
+
+train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 def train():
     model.train()
