@@ -55,19 +55,20 @@ class GatedConvModel(torch.nn.Module):
         self.n_atom_basis = n_atom_basis
         self.n_filters = n_filters
         self.max_radius = max_radius
-        self.h = h
         self.cutoff = cutoff
 
         self.node_features = nn.Linear(3, n_atom_basis)
 
         self.filter_network = FullyConnectedNet(
             [n_atom_basis] + 3 * [n_filters] + [n_filters * n_gaussians],
-            h=h,
         )
+
         irreps_gates = [(1, (0, 0))]  # gates are scalars
         irreps_out = n_atom_basis * [(1, (0, 0))]  # atom centered basis functions
 
-        self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e")
+        #self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e")
+        self.gate = Gate("16x0e", [torch.tanh], "32x0e", [torch.sigmoid], "16x1e+16x1o")
+
 
         self.atom_wise = nn.Sequential(
             nn.BatchNorm1d(n_atom_basis),
