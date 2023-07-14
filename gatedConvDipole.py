@@ -63,12 +63,7 @@ class GatedConvModel(torch.nn.Module):
             [n_atom_basis] + 3 * [n_filters] + [n_filters * n_gaussians],
         )
 
-        irreps_gates = [(1, (0, 0))]  # gates are scalars
-        irreps_out = n_atom_basis * [(1, (0, 0))]  # atom centered basis functions
-
-        #self.gate = Gate("16x0o", [torch.tanh], "32x0o", [torch.sigmoid], "16x1e")
         self.gate = Gate("16x0e", [torch.tanh], "32x0e", [torch.sigmoid], "16x1e+16x1o")
-
 
         self.atom_wise = nn.Sequential(
             nn.BatchNorm1d(n_atom_basis),
@@ -80,13 +75,11 @@ class GatedConvModel(torch.nn.Module):
         x = self.node_features(data.pos)
         edge_index = radius_graph(data.pos, r=self.cutoff, batch=None, loop=True)
 
-        # Ensure edge_attr is not None and has the correct size
-        if data.edge_attr is None or data.edge_attr.shape[0] != edge_index.shape[1]:
-            # Calculate pairwise distance for each edge
-            pairwise_dist = torch.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1, keepdim=True)
-        else:
-            # If edge_attr exists and has correct size, use it
-            pairwise_dist = data.edge_attr
+        # Calculate pairwise distance for each edge
+        pairwise_dist = torch.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1, keepdim=True)
+
+        # Expand the pairwise_dist tensor
+        pairwise_dist = pairwise_dist.view(-1, 1).expand(-1, self.n_atom_basis)
 
         # Edge embedding
         edge_emb = self.filter_network(pairwise_dist)
