@@ -43,10 +43,10 @@ model = DipolePredictorSE3()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 # Load data
-dataset = QM93D(root='data')
+#dataset = QM93D(root='data')
 
-dataset = SE3TransformedDataset(dataset)
-
+#dataset = SE3TransformedDataset(dataset)
+dataset = SE3TransformedDataset(root='/tmp/QM9')
 # Same splitting as before
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
 train_dataset = dataset[split_idx['train']]
