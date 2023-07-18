@@ -13,12 +13,16 @@ class SE3TransformedDataset(QM93D):
     def process(self):
         # Call parent's process method to load and preprocess the data
         super(SE3TransformedDataset, self).process()
+        
+        # Create a new list of data
+        data_list = [self.get(idx) for idx in range(len(self))]
 
         # Modify data
-        for data in self.data_list:
+        for data in data_list:
             data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
 
         # Save the modified data
+        self.data, self.slices = self.collate(data_list)
         torch.save((self.data, self.slices), self.processed_paths[0])
 
 
