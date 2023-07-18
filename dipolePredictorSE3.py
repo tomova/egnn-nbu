@@ -22,8 +22,8 @@ class DipolePredictorSE3(torch.nn.Module):
 
     def forward(self, data):
         x = self.se3_transformer(data.x, data.edge_index)
-        #x = x.mean(dim=0)  # reduce the output to a single vector
-        x = self.fc(x)
+        x = x.mean(dim=0)  # reduce the output to a single vector
+        x = self.fc1(x)
         x = self.fc2(x)
         return x
 
