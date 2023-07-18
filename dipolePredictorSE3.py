@@ -11,9 +11,16 @@ class SE3TransformedDataset(QM93D):
         super(SE3TransformedDataset, self).__init__(*args, **kwargs)
 
     def process(self):
+        # Call parent's process method to load and preprocess the data
         super(SE3TransformedDataset, self).process()
-        for data in self:
+
+        # Modify data
+        for data in self.data_list:
             data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+
+        # Save the modified data
+        torch.save((self.data, self.slices), self.processed_paths[0])
+
 
 class DipolePredictorSE3(torch.nn.Module):
     def __init__(self):
