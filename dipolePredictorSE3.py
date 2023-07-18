@@ -14,16 +14,17 @@ class DipolePredictorSE3(torch.nn.Module):
             dim=4,
             heads=8,
             depth=2,
-            num_degrees=4,
-            reduce_dim=True
+            num_degrees=4
         )
         
-        self.fc = torch.nn.Linear(4, 3)
+        self.fc1 = torch.nn.Linear(4, 3)  # Add a fully connected layer to reduce dimension
+        self.fc2 = torch.nn.Linear(3, 3)
 
     def forward(self, data):
         x = self.se3_transformer(data.x, data.edge_index)
-        x = x.mean(dim=0)  # reduce the output to a single vector
+        #x = x.mean(dim=0)  # reduce the output to a single vector
         x = self.fc(x)
+        x = self.fc2(x)
         return x
 
 
