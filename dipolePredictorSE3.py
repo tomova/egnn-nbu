@@ -35,15 +35,15 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 # Load data
 dataset = QM93D(root='data')
 
+# Adjust data to SE3 Transformer
+for data in dataset:
+    data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+
 # Same splitting as before
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
 train_dataset = dataset[split_idx['train']]
 val_dataset = dataset[split_idx['valid']]
 test_dataset = dataset[split_idx['test']]
-
-# Adjust data to SE3 Transformer
-for data in train_dataset + val_dataset + test_dataset:
-    data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
 
 train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
