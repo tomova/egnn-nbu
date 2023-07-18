@@ -4,6 +4,29 @@ from torch_geometric.data import Data
 from sklearn.metrics import r2_score
 from se3_transformer_pytorch import SE3Transformer
 from QM93D_MM import QM93D
+from torch_geometric.data import Dataset, Data
+
+class SE3TransformedDataset(Dataset):
+    def __init__(self, dataset):
+        super(SE3TransformedDataset, self).__init__(dataset.root, dataset.transform, dataset.pre_transform)
+        self.dataset = dataset
+        
+    @property
+    def raw_file_names(self):
+        return self.dataset.raw_file_names
+    
+    @property
+    def processed_file_names(self):
+        return self.dataset.processed_file_names
+
+    def len(self):
+        return len(self.dataset)
+
+    def get(self, idx):
+        data = self.dataset[idx]
+        data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+        return data
+
 
 class DipolePredictorSE3(torch.nn.Module):
     def __init__(self):
@@ -35,9 +58,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 # Load data
 dataset = QM93D(root='data')
 
-# Adjust data to SE3 Transformer
-for data in dataset:
-    data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+dataset = SE3TransformedDataset(dataset)
 
 # Same splitting as before
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
