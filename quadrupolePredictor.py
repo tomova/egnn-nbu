@@ -3,6 +3,7 @@ from torch.nn import Linear
 import torch.nn.functional as F
 from torch_geometric.nn import GraphConv, global_mean_pool
 from sklearn.metrics import mean_squared_error
+from QM93D_MM import QM93D
 
 class QuadrupolePredictor(torch.nn.Module):
     def __init__(self):
