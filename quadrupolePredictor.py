@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch_geometric.nn import GraphConv, global_mean_pool
 from sklearn.metrics import mean_squared_error
 from QM93D_MM import QM93D
+from torch_geometric.loader import DataLoader
+from sklearn.metrics import r2_score
 
 class QuadrupolePredictor(torch.nn.Module):
     def __init__(self):
@@ -73,18 +75,20 @@ def test(loader):
     y_true = torch.cat(y_true, dim=0)
     y_pred = torch.cat(y_pred, dim=0)
     mse = F.mse_loss(y_pred, y_true).item()
-    return mse
+    r2 = r2_score(y_true.numpy(), y_pred.numpy())
+    return mse, r2
 
 # Train and validate the model
 for epoch in range(1, 1001):  # Training for 1000 epochs
     train()
-    train_mse = test(train_loader)
-    val_mse = test(val_loader)
-    print(f'Epoch: {epoch:03d}, Train MSE: {train_mse:.4f}, Val MSE: {val_mse:.4f}')
+    train_mse, train_r2 = test(train_loader)
+    val_mse, val_r2 = test(val_loader)
+    print(f'Epoch: {epoch:03d}, Train MSE: {train_mse:.4f}, Train R2: {train_r2:.4f}, Val MSE: {val_mse:.4f}, Val R2: {val_r2:.4f}')
 
 # After all epochs, test the model
-test_mse = test(test_loader)
-print(f'\nAfter {epoch} epochs, Test MSE: {test_mse:.4f}')
+test_mse, test_r2 = test(test_loader)
+print(f'\nAfter {epoch} epochs, Test MSE: {test_mse:.4f}, Test R2: {test_r2:.4f}')
+
 
 # Save the model
 torch.save(model.state_dict(), 'quadrupole_predictor.pth')
