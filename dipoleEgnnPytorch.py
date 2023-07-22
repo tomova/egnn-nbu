@@ -11,16 +11,13 @@ import torch.nn.functional as F
 
 
 class GNNModel(torch.nn.Module):
-    def __init__(self, num_features, hidden_channels, num_classes, num_layers):
+    def __init__(self, num_features, hidden_channels, num_classes, num_layers, feats_dim, pos_dim, m_dim, n_layers):
         super(GNNModel, self).__init__()
         self.egnn = EGNN_Sparse_Network(
-            feats_dim=num_features, 
-            pos_dim=3, 
-            edge_attr_dim=1, 
-            m_dim=hidden_channels, 
-            fourier_features=0,
-            embedding_dim=hidden_channels,
-            num_layers=num_layers,
+            feats_dim=feats_dim, 
+            pos_dim=pos_dim, 
+            m_dim=m_dim, 
+            n_layers=n_layers
         )
         self.lin1 = Linear(hidden_channels, num_classes)
 
@@ -45,12 +42,29 @@ N = len(np.unique([atom_type for data in dataset for atom_type in data.z]))  # T
 
 num_features = N + 3  # N one-hot features for atomic types and 3 for positions
 
-model_dipole = GNNModel(num_features=num_features, hidden_channels=64, num_classes=3, num_layers=3)
+model_dipole = GNNModel(
+    num_features=num_features, 
+    hidden_channels=64, 
+    num_classes=3, 
+    num_layers=3,
+    feats_dim=num_features, 
+    pos_dim=3, 
+    m_dim=64, 
+    n_layers=3
+)
 model_dipole = model_dipole.to(device)
 
-model_quadrupole = GNNModel(num_features=num_features, hidden_channels=64, num_classes=9, num_layers=3)
+model_quadrupole = GNNModel(
+    num_features=num_features, 
+    hidden_channels=64, 
+    num_classes=9, 
+    num_layers=3,
+    feats_dim=num_features, 
+    pos_dim=3, 
+    m_dim=64, 
+    n_layers=3
+)
 model_quadrupole = model_quadrupole.to(device)
-
 
 optimizer_dipole = Adam(model_dipole.parameters(), lr=0.001)
 optimizer_quadrupole = Adam(model_quadrupole.parameters(), lr=0.001)
