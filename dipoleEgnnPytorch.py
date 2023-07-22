@@ -80,7 +80,7 @@ def train(model, optimizer, target):
         data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
         node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
         optimizer.zero_grad()
-        out = model(node_features, data.edge_index, data.edge_attr)
+        out = model(node_features, data.edge_index, data.edge_attr, data.pos)
         loss = loss_func(out, getattr(data, target))
         loss.backward()
         optimizer.step()
@@ -95,7 +95,7 @@ def validate(loader, model, target):
             data = data.to(device)
             data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
             node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
-            out = model(node_features, data.edge_index, data.edge_attr)
+            out = model(node_features, data.edge_index, data.edge_attr, data.pos)
             loss = loss_func(out, getattr(data, target))
             total_loss += loss.item()
     return total_loss / len(loader)
@@ -109,7 +109,7 @@ def test(loader, model, target):
             data = data.to(device)
             data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
             node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
-            out = model(node_features, data.edge_index, data.edge_attr)
+            out = model(node_features, data.edge_index, data.edge_attr, data.pos)
             true_values.append(getattr(data, target).cpu())
             predictions.append(out.cpu())
     true_values = torch.cat(true_values)
