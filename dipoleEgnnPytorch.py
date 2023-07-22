@@ -9,6 +9,8 @@ from QM93D_MM import QM93D
 from torch_geometric.loader import DataLoader
 import torch.nn.functional as F 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class GNNModel(torch.nn.Module):
     def __init__(self, num_features, hidden_channels, num_classes, num_layers, feats_dim, pos_dim, m_dim, n_layers):
@@ -26,7 +28,6 @@ class GNNModel(torch.nn.Module):
         out = self.lin1(x)
         return out
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Load data
 dataset = QM93D(root='data')
 # Split data into train, validation and test sets
