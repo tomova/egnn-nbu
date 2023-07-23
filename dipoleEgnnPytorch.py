@@ -24,6 +24,8 @@ class GNNModel(torch.nn.Module):
         self.lin1 = Linear(hidden_channels, num_classes)
 
     def forward(self, x, edge_index, edge_attr, pos):
+        print("edge_index dtype:", edge_index.dtype)
+        print("edge_index shape:", edge_index.shape)
         x, pos = self.egnn(x, pos, edge_index, edge_attr)
         out = self.lin1(x)
         return out
@@ -39,8 +41,8 @@ test_dataset = dataset[split_idx['test']]
 train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-N = len(np.unique([atom_type for data in dataset for atom_type in data.z]))  # Total unique atom types
-
+#N = len(np.unique([atom_type for data in dataset for atom_type in data.z]))  # Total unique atom types
+N = 10
 num_features = N + 3  # N one-hot features for atomic types and 3 for positions
 
 model_dipole = GNNModel(
@@ -78,12 +80,11 @@ def train(model, optimizer, target):
     for data in train_loader:
         data = data.to(device)
         data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
-        node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
-        print("Max edge_index train:", data.edge_index.max())
-        print("Min edge_index train:", data.edge_index.min())
-        print("Edge_index shape train:", data.edge_index.shape)
-        print("Number of nodes train:", data.num_nodes)
+        print("data edge_index shape:", data.edge_index.shape)
+        print("data edge_index dtype:", data.edge_index.dtype)
+        print("pos shape:", data.pos.shape)
         data.edge_index = data.edge_index.long()  # Convert to long tensor
+        node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
         optimizer.zero_grad()
         out = model(node_features, data.edge_index, data.edge_attr, data.pos)
         loss = loss_func(out, getattr(data, target))
@@ -99,12 +100,8 @@ def validate(loader, model, target):
         for data in loader:
             data = data.to(device)
             data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
-            node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
-            print("Max edge_index validate:", data.edge_index.max())
-            print("Min edge_index validate:", data.edge_index.min())
-            print("Edge_index shape validate:", data.edge_index.shape)
-            print("Number of nodes validate:", data.num_nodes)
             data.edge_index = data.edge_index.long()  # Convert to long tensor
+            node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
             out = model(node_features, data.edge_index, data.edge_attr, data.pos)
             loss = loss_func(out, getattr(data, target))
             total_loss += loss.item()
@@ -118,8 +115,8 @@ def test(loader, model, target):
         for data in loader:
             data = data.to(device)
             data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
-            node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
             data.edge_index = data.edge_index.long()  # Convert to long tensor
+            node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
             out = model(node_features, data.edge_index, data.edge_attr, data.pos)
             true_values.append(getattr(data, target).cpu())
             predictions.append(out.cpu())
