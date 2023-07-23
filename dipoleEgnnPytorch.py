@@ -79,6 +79,10 @@ def train(model, optimizer, target):
         data = data.to(device)
         data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
         node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
+        print("Max edge_index train:", data.edge_index.max())
+        print("Min edge_index train:", data.edge_index.min())
+        print("Edge_index shape train:", data.edge_index.shape)
+        print("Number of nodes train:", data.num_nodes)
         data.edge_index = data.edge_index.long()  # Convert to long tensor
         optimizer.zero_grad()
         out = model(node_features, data.edge_index, data.edge_attr, data.pos)
@@ -96,6 +100,10 @@ def validate(loader, model, target):
             data = data.to(device)
             data.z = F.one_hot(data.z, num_classes=N).float().to(device)  # One-hot encoding
             node_features = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
+            print("Max edge_index validate:", data.edge_index.max())
+            print("Min edge_index validate:", data.edge_index.min())
+            print("Edge_index shape validate:", data.edge_index.shape)
+            print("Number of nodes validate:", data.num_nodes)
             data.edge_index = data.edge_index.long()  # Convert to long tensor
             out = model(node_features, data.edge_index, data.edge_attr, data.pos)
             loss = loss_func(out, getattr(data, target))
