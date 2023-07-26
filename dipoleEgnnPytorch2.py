@@ -38,10 +38,48 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, collate_fn=
 
 # Define EGNN Network
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+class CustomEGNNNetwork(EGNN_Network):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lin1 = torch.nn.Linear(kwargs['num_tokens'], kwargs['dim'])
+    
+    def forward(self, feats, coors, mask = None):
+        feats = self.lin1(feats)
+
+        # replace original forward method
+        coors = self.coor_emb(coors)
+        b, n, _ = coors.shape
+
+        if mask is not None:
+            mask = mask.bool()
+
+        # initial features and coordinates
+        x = feats
+        coors = coors
+
+        # layer norm on input
+        x = self.norm_in(x)
+
+        for step in range(self.depth):
+            # get neighbors and extend input
+            rel_coors = get_relative_positions(coors = coors, num_nearest = self.num_nearest_neighbors)
+            edge_index, _ = radius_graph(coors, r = self.r, batch = None, max_num_neighbors = self.num_nearest_neighbors)
+
+            x, coors = self.layers[step](
+                x,
+                coors,
+                edge_index,
+                rel_coors,
+                mask = mask
+            )
+
+        # final mlp head
+        return self.mlp_head(x), coors
+
 
 num_tokens = 4
 
-net = EGNN_Network(
+net = CustomEGNNNetwork(
     num_tokens = num_tokens,  # updated to match the dimension of the new feature vector
     dim = 32,
     depth = 3,
@@ -61,8 +99,8 @@ for epoch in range(100):  # for simplicity, we just run 100 epochs
         data = data.to(device)
         mask = torch.ones_like(data.z).bool().to(device)
         optimizer.zero_grad()
-        
-        feats_out, coors_out = net(data.x, data.pos, mask=mask) 
+        x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+        feats_out, coors_out = net(x, data.pos, mask=mask) 
         loss = criterion(feats_out.squeeze(), data.dipole)
         
         loss.backward()
@@ -73,8 +111,8 @@ for epoch in range(100):  # for simplicity, we just run 100 epochs
         for data in valid_loader:
             data = data.to(device)
             mask = torch.ones_like(data.z).bool().to(device)
-            
-            feats_out, coors_out = net(data.x, data.pos, mask=mask)
+            x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+            feats_out, coors_out = net(dx, data.pos, mask=mask)
             val_loss = criterion(feats_out.squeeze(), data.dipole)
     
     print(f'Epoch: {epoch+1}, Train Loss: {loss.item()}, Validation Loss: {val_loss.item()}')
@@ -87,8 +125,8 @@ with torch.no_grad():
     for data in test_loader:
         data = data.to(device)
         mask = torch.ones_like(data.z).bool().to(device)
-        
-        feats_out, coors_out = net(data.x, data.pos, mask=mask)
+        x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+        feats_out, coors_out = net(x, data.pos, mask=mask)
         test_loss = criterion(feats_out.squeeze(), data.dipole)
         test_r2_score = calculate_r2_score(data.dipole, feats_out.squeeze())
 
