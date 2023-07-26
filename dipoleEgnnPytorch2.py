@@ -39,8 +39,10 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, collate_fn=
 # Define EGNN Network
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+num_tokens = 4
+
 net = EGNN_Network(
-    num_tokens = dataset[0].x.size(1),  # updated to match the dimension of the new feature vector
+    num_tokens = num_tokens,  # updated to match the dimension of the new feature vector
     dim = 32,
     depth = 3,
     num_nearest_neighbors = 8,
