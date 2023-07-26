@@ -3,6 +3,7 @@ from torch_geometric.data import DataLoader
 from egnn_pytorch import EGNN_Network
 from QM93D_MM import QM93D
 from sklearn.metrics import r2_score
+from torch_geometric.data import Batch
 
 # Function to calculate R2 score
 def calculate_r2_score(y_true, y_pred):
@@ -14,8 +15,8 @@ def calculate_r2_score(y_true, y_pred):
 dataset = QM93D(root='data')
 
 # Combine pos and z to make a new feature vector
-for data in dataset:
-    data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+#for data in dataset:
+#    data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
 
 # Split data into train, validation and test sets
 split_idx = dataset.get_idx_split(len(dataset), train_size=110000, valid_size=10000, seed=42)
@@ -23,9 +24,17 @@ train_dataset = dataset[split_idx['train']]
 val_dataset = dataset[split_idx['valid']]
 test_dataset = dataset[split_idx['test']]
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-valid_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+def collate_fn(batch):
+    # Batch is a list of data points. Each data point is a namedtuple with attributes: pos, z, dipole
+    batch = [data.to(device) for data in batch]
+    for data in batch:
+        data.x = torch.cat([data.pos, data.z.view(-1, 1)], dim=-1)
+    return Batch.from_data_list(batch)
+
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+valid_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
+
 
 # Define EGNN Network
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
