@@ -9,6 +9,18 @@ from QM93D_MM import QM93D
 import torch.nn.functional as F
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+def r2(loader, model):
+    model.eval()
+    preds = []
+    targets = []
+    for data in loader:
+        data = data.to(device)
+        preds.append(model(data))
+        targets.append(data.dipole)
+    preds = torch.cat(preds, dim=0)
+    targets = torch.cat(targets, dim=0)
+    return r2_score(targets.cpu().numpy(), preds.cpu().detach().numpy())
+
 class ModifiedEGNN(MessagePassing):
     def __init__(self, in_channels, out_channels):
         super(ModifiedEGNN, self).__init__(aggr='mean')
@@ -103,16 +115,17 @@ def main():
     # Define optimizer and criterion
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     criterion = torch.nn.MSELoss()
-
-    # Training and validation loop
     for epoch in range(100):
-        train(net, train_loader, optimizer, criterion)
-        val_mse, val_r2 = test(net, val_loader, criterion)
-        print(f"Epoch: {epoch+1}, Validation MSE: {val_mse}, Validation R^2: {val_r2}")
+        loss = train(epoch, net, train_loader, optimizer)
+        val_error = test(val_loader, net)
+        val_r2 = r2(val_loader, net)
+        print(f"Epoch: {epoch+1}, Training Loss: {loss}, Validation Error: {val_error}, Validation R^2: {val_r2}")
 
     # Test
-    test_mse, test_r2 = test(net, test_loader, criterion)
-    print(f"Test MSE: {test_mse}, Test R^2: {test_r2}")
+    test_error = test(test_loader, net)
+    test_r2 = r2(test_loader, net)
+    print(f"Test Error: {test_error}, Test R^2: {test_r2}")
+
 
 if __name__ == "__main__":
     main()
