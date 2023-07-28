@@ -45,13 +45,16 @@ class ModifiedEGNN_Network(torch.nn.Module):
 
         self.egnn = ModifiedEGNN(num_node_features, num_edge_features)
         self.fc1 = torch.nn.Linear(num_node_features, 128)
-        self.fc2 = torch.nn.Linear(128, 3)  # Changed output size to 3
+        self.fc2 = torch.nn.Linear(128, 3)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
 
+        if edge_index is None:
+            edge_index = torch.tensor([[i, i] for i in range(x.shape[0])], dtype=torch.long).T
+
         # Pass node and edge features through the EGNN
-        x = self.egnn(x, edge_index)
+        x = self.egnn(x, edge_index.to(x.device))
 
         # Pass through fully connected layers
         x = torch.relu(self.fc1(x))
