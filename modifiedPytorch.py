@@ -48,10 +48,11 @@ class ModifiedEGNN_Network(torch.nn.Module):
         self.fc2 = torch.nn.Linear(128, 3)
 
     def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+        x = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
+        edge_index = data.edge_index
 
-        if edge_index is None:
-            edge_index = torch.tensor([[i, i] for i in range(x.shape[0])], dtype=torch.long).T
+        if x is None or edge_index is None:
+            raise ValueError("Input feature vectors (x) or edge indices (edge_index) are None")
 
         # Pass node and edge features through the EGNN
         x = self.egnn(x, edge_index.to(x.device))
@@ -60,10 +61,8 @@ class ModifiedEGNN_Network(torch.nn.Module):
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         
-        # Sum up the node features to get a graph-level output
-        x = torch.sum(x, dim=0)
+        # Sum up the node features to get a graph-level
 
-        return x
     
 def train(epoch, model, loader, optimizer):
     model.train()
