@@ -43,25 +43,29 @@ class ModifiedEGNN_Network(torch.nn.Module):
     def __init__(self, num_node_features, num_edge_features):
         super(ModifiedEGNN_Network, self).__init__()
 
-        self.egnn = ModifiedEGNN(num_node_features, num_edge_features)
-        self.fc1 = torch.nn.Linear(num_node_features, 128)
+        self.egnn_z = ModifiedEGNN(1, num_edge_features)  # Add a layer for z features
+        self.egnn_pos = ModifiedEGNN(3, num_edge_features)  # Add a layer for pos features
+        self.fc1 = torch.nn.Linear(num_node_features + num_edge_features * 2, 128)  # Adjust the input size
         self.fc2 = torch.nn.Linear(128, 3)
 
     def forward(self, data):
-        x = torch.cat([data.z, data.pos], dim=-1)  # Concatenate atomic numbers and positions
-        edge_index = data.edge_index
+        z = self.egnn_z(data.z.unsqueeze(-1), data.edge_index.to(data.z.device))  # unsqueeze to add an extra dimension
+        pos = self.egnn_pos(data.pos, data.edge_index.to(data.pos.device))
+        
+        x = torch.cat([z, pos], dim=-1)  # Concatenate the outputs
 
-        if x is None or edge_index is None:
+        if x is None or data.edge_index is None:
             raise ValueError("Input feature vectors (x) or edge indices (edge_index) are None")
-
-        # Pass node and edge features through the EGNN
-        x = self.egnn(x, edge_index.to(x.device))
 
         # Pass through fully connected layers
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         
-        # Sum up the node features to get a graph-level
+        # Sum up the node features to get a graph-level output
+        x = torch.sum(x, dim=0)
+
+        return x
+
 
     
 def train(epoch, model, loader, optimizer):
