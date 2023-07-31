@@ -20,21 +20,27 @@ class CustomQM9EdgeDataset(QM9EdgeDataset):
     def process_dipole_quadrupole_moments(self):
         for idx in range(len(self)):
             g, label = self[idx]
-            
-            # Assuming you have functions to calculate the dipole and quadrupole moments
-            dipole = self.calculate_dipole(g)
-            quadrupole = self.calculate_quadrupole(g)
-            
+
+            # Retrieve coordinates and charges here, for example
+            coordinates = g.ndata['pos']
+            charges = g.ndata['charge']
+
+            # Call calculation functions with those arguments
+            dipole = self.calculate_dipole(coordinates, charges)
+            quadrupole = self.calculate_quadrupole(coordinates, charges)
+
             # Add them to the node data of the graph
             g.ndata["dipole"] = dipole
             g.ndata["quadrupole"] = quadrupole
 
     # Additional functions to calculate dipole and quadrupole moments
+    @staticmethod
     def calculate_dipole(coordinates, charges):
         return np.sum(coordinates * charges[:, np.newaxis], axis=0)
 
+    @staticmethod
     def calculate_quadrupole(coordinates, charges):
-       return np.sum([charge * np.outer(coord, coord) for charge, coord in zip(charges, coordinates)], axis=0)
+        return np.sum([charge * np.outer(coord, coord) for charge, coord in zip(charges, coordinates)], axis=0)
 
 # Load dataset
 dataset = CustomQM9EdgeDataset()
