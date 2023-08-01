@@ -21,7 +21,7 @@ dataset_tg = []
 for atom_features, adjacency_matrix, atom_positions, dipole, _ in data:
     edge_index = torch.tensor(np.stack(np.where(adjacency_matrix == 1)), dtype=torch.long)
 
-    x = torch.tensor(atom_features, dtype=torch.long).unsqueeze(-1) 
+    x = torch.tensor(atom_features, dtype=torch.float).unsqueeze(-1) 
 
     num_nodes = x.shape[0]  # Number of nodes in the current graph
     max_num_nodes = max(max_num_nodes, num_nodes)  # Update if greater than previous max
