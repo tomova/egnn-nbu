@@ -14,12 +14,11 @@ dataset_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '
 with open(dataset_path, 'rb') as f:
     data = pickle.load(f)
 
-# Create a PyTorch Geometric dataset
 dataset_tg = []
 for atom_features, adjacency_matrix, atom_positions, dipole, _ in data:
     edge_index = torch.tensor(np.stack(np.where(adjacency_matrix == 1)), dtype=torch.long)
-    x = torch.tensor(atom_features, dtype=torch.float).view(-1, 1)
-    pos = torch.tensor(atom_positions, dtype=torch.float)
+    x = torch.tensor(atom_features, dtype=torch.long)  # Use Long dtype
+    pos = torch.tensor(np.array(atom_positions), dtype=torch.float)
     y = torch.tensor(dipole, dtype=torch.float)
     graph_data = Data(x=x, edge_index=edge_index, pos=pos, y=y)
     dataset_tg.append(graph_data)
@@ -53,15 +52,26 @@ class CustomEGNN_Network(EGNN_Network):
         self.dipole_head = nn.Linear(kwargs['dim'], 3) # Output for dipole
 
     def forward(self, data):
+        # Call the forward method of the base EGNN_Network class
         feats, coors = super().forward(feats=data.x, coors=data.pos, adj_mat=data.edge_index)
-        dipole = self.dipole_head(feats)
+
+        # Aggregate the node-level features into graph-level features
+        # by taking the mean across the nodes (dimension 1)
+        aggregated_feats = feats.mean(dim=1)
+
+        # Pass the aggregated features through the dipole head to predict
+        # the 3D dipole moment for each graph in the batch
+        dipole = self.dipole_head(aggregated_feats)
+
         return dipole
+
 
 # Network Initialization
 model = CustomEGNN_Network(
     depth=4,
     dim=64,
-    num_positions=3
+    num_tokens=10  # Covering atomic numbers in QM9
+    #num_positions=3
 )
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
