@@ -63,7 +63,7 @@ class QuadrupolePredictor(nn.Module):
 
     def forward(self, feats, coors, adj_mat):
         feats_out, _ = self.egnn(feats, coors, adj_mat=adj_mat)
-        return self.predictor(feats_out)
+        return self.predictor(feats_out).view(-1, 3, 3)  # Reshaping to match the target size
     
 net = QuadrupolePredictor()
 
