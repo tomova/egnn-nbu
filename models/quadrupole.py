@@ -105,8 +105,14 @@ for epoch in range(1000):
         # Zero gradients
         optimizer.zero_grad()
         total_loss += loss.item()
-        r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
+
+        r2 = 0
+        for i in range(3):
+           for j in range(3):
+                r2 += r2_score(target[:, i, j].cpu().numpy(), feats_out[:, i, j].detach().cpu().numpy())
+        r2 /= 9  # average over the 9 elements
         total_r2 += r2
+        
 
     avg_loss = total_loss / len(train_loader)
     avg_r2 = total_r2 / len(train_loader)
@@ -130,7 +136,11 @@ for epoch in range(1000):
             val_loss += loss.item()
 
             # Compute R2 score
-            r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
+            r2 = 0
+            for i in range(3):
+                for j in range(3):
+                    r2 += r2_score(target[:, i, j].cpu().numpy(), feats_out[:, i, j].detach().cpu().numpy())
+            r2 /= 9  # average over the 9 elements
             val_r2 += r2
         avg_val_loss = val_loss / len(val_loader)
         avg_val_r2 = val_r2 / len(val_loader)
@@ -161,7 +171,11 @@ with torch.no_grad():
         test_loss += loss.item()
 
         # Compute R2 score
-        r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
+        r2 = 0
+        for i in range(3):
+            for j in range(3):
+                r2 += r2_score(target[:, i, j].cpu().numpy(), feats_out[:, i, j].detach().cpu().numpy())
+        r2 /= 9  # average over the 9 elements
         test_r2 += r2
 
     avg_test_loss = test_loss / len(test_loader)
