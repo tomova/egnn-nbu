@@ -1,31 +1,42 @@
 import numpy as np
 import os
+import os.path as osp
 
 from spektral.data import Graph
 from spektral.datasets.qm9 import QM9
 
 class CustomQM9EdgeDataset(QM9):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.dipoles_file = osp.join(self.path, 'dipoles.npy')
+        self.quadrupoles_file = osp.join(self.path, 'quadrupoles.npy')
+
     def read(self):
+        # Load the data using the base class's read method
         graphs = super().read()
 
-        # Check if dipole and quadrupole moments are already saved
-        dipole_file = os.path.join(self.path, "dipoles.npy")
-        quadrupole_file = os.path.join(self.path, "quadrupoles.npy")
-        
-        if os.path.exists(dipole_file) and os.path.exists(quadrupole_file):
-            dipoles = np.load(dipole_file)
-            quadrupoles = np.load(quadrupole_file)
+        # Check if dipoles and quadrupoles have been saved to disk
+        if osp.exists(self.dipoles_file) and osp.exists(self.quadrupoles_file):
+            dipoles_all = np.load(self.dipoles_file)
+            quadrupoles_all = np.load(self.quadrupoles_file)
         else:
-            # Compute dipole and quadrupole moments
-            dipoles, quadrupoles = [], []
+            # Compute dipoles and quadrupoles and save them to disk
+            dipoles_all = []
+            quadrupoles_all = []
             for graph in graphs:
-                dipole, quadrupole = self.compute_moments(graph)
-                dipoles.append(dipole)
-                quadrupoles.append(quadrupole)
-            
-            # Save to disk
-            np.save(dipole_file, dipoles)
-            np.save(quadrupole_file, quadrupoles)
+                dipoles, quadrupoles = self.compute_moments(graph)
+                dipoles_all.append(dipoles)
+                quadrupoles_all.append(quadrupoles)
+
+            dipoles_all = np.array(dipoles_all)
+            quadrupoles_all = np.array(quadrupoles_all)
+            np.save(self.dipoles_file, dipoles_all)
+            np.save(self.quadrupoles_file, quadrupoles_all)
+
+        # Attach the dipoles and quadrupoles to the graph objects
+        for i, graph in enumerate(graphs):
+            graph.dipoles = dipoles_all[i]
+            graph.quadrupoles = quadrupoles_all[i]
 
         return graphs
 
