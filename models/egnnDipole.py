@@ -25,13 +25,20 @@ for atom_features, adjacency_matrix, atom_positions, dipole, _ in data:
     dataset_tg.append(graph_data)
 
 # Define the split sizes
+total_samples = len(dataset_tg)
 train_size = 110000
 val_size = 10000
-test_size = len(dataset_tg) - train_size - val_size
+test_size = total_samples - train_size - val_size
 
 # Split the data using train_test_split with specific random seed
-train_data, temp_data = train_test_split(dataset_tg[:train_size + val_size], train_size=train_size, random_state=42)
-val_data, test_data = train_test_split(temp_data, test_size=test_size, random_state=42)
+train_data, temp_data = train_test_split(dataset_tg, train_size=train_size, random_state=42)
+val_data, test_data = train_test_split(temp_data, train_size=val_size, random_state=42)
+
+# Print the size of each split
+print("Train size:", len(train_data))
+print("Validation size:", len(val_data))
+print("Test size:", len(test_data))
+
 
 # Define DataLoader objects
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
