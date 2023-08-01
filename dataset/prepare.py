@@ -49,9 +49,17 @@ sdf_supplier = Chem.SDMolSupplier('gdb9.sdf')
 dataset = []
 
 # Process each molecule
-for mol in sdf_supplier:
-    # Compute Gasteiger charges
-    rdPartialCharges.ComputeGasteigerCharges(mol)
+for idx, mol in enumerate(sdf_supplier):
+    if mol is None:
+        print(f"Skipping molecule at index {idx} due to loading error.")
+        continue
+
+    try:
+        # Compute Gasteiger charges
+        rdPartialCharges.ComputeGasteigerCharges(mol)
+    except:
+        print(f"Skipping molecule at index {idx} due to sanitization error.")
+        continue
 
     # Convert molecule to graph representation
     atom_features, adjacency_matrix, atom_positions = mol_to_graph(mol)
