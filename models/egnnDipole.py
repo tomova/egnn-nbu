@@ -45,15 +45,18 @@ val_loader = DataLoader(val_data, batch_size=32)
 test_loader = DataLoader(test_data, batch_size=32)
 
 
-# Custom Network Class
 class CustomEGNN_Network(EGNN_Network):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.dipole_head = nn.Linear(kwargs['dim'], 3) # Output for dipole
+        self.dipole_head = nn.Linear(kwargs['dim'], 3)  # Output for dipole
+        self.embedding = nn.Embedding(kwargs['num_tokens'], kwargs['dim'])  # Embedding layer
 
     def forward(self, data):
+        # Embed atomic numbers into feature vectors
+        embedded_features = self.embedding(data.x)
+
         # Call the forward method of the base EGNN_Network class
-        feats, coors = super().forward(feats=data.x, coors=data.pos, adj_mat=data.edge_index)
+        feats, coors = super().forward(feats=embedded_features, coors=data.pos, adj_mat=data.edge_index)
 
         # Aggregate the node-level features into graph-level features
         # by taking the mean across the nodes (dimension 1)
@@ -66,12 +69,12 @@ class CustomEGNN_Network(EGNN_Network):
         return dipole
 
 
+
 # Network Initialization
 model = CustomEGNN_Network(
     depth=4,
     dim=64,
     num_tokens=10  # Covering atomic numbers in QM9
-    #num_positions=3
 )
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
