@@ -5,11 +5,11 @@ import os.path as osp
 from spektral.data import Graph
 from spektral.datasets.qm9 import QM9
 
-class CustomQM9EdgeDataset(QM9):
+class CustomQM9Dataset(QM9):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.dipoles_file = osp.join(self.path, 'dipoles.npy')
         self.quadrupoles_file = osp.join(self.path, 'quadrupoles.npy')
+        super().__init__(**kwargs)
 
     def read(self):
         # Load the data using the base class's read method
