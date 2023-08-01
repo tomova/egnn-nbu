@@ -27,18 +27,19 @@ def calculate_quadrupole_moment(mol):
                 quadrupole[i, j] += charge * position[i] * position[j]
     return quadrupole
 
-
 def mol_to_graph(mol):
-    # Get atom features (e.g., atomic numbers as a one-hot encoding)
+    # Convert atoms to features (atomic numbers)
     atom_features = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
 
-    # Get adjacency matrix (can be binary or include bond type information)
+    # Get adjacency matrix
     adjacency_matrix = Chem.GetAdjacencyMatrix(mol)
 
-    # Get atom coordinates (if needed for your model)
-    atom_positions = [atom.GetPos() for atom in mol.GetAtoms()]
+    # Get atom coordinates
+    conformer = mol.GetConformer()
+    atom_positions = [conformer.GetAtomPosition(atom.GetIdx()) for atom in mol.GetAtoms()]
+    atom_positions = [np.array([pos.x, pos.y, pos.z]) for pos in atom_positions]
 
-    return atom_features, adjacency_matrix, atom_positions
+    return np.array(atom_features), adjacency_matrix, atom_positions
 
 
 # Load molecules from SDF file
