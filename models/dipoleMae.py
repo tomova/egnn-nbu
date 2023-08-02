@@ -46,6 +46,7 @@ val_data, test_data = train_test_split(temp_data, train_size=val_size, random_st
 print("Train size:", len(train_data))
 print("Validation size:", len(val_data))
 print("Test size:", len(test_data))
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class DipolePredictor(nn.Module):
@@ -70,7 +71,7 @@ class DipolePredictor(nn.Module):
         return self.predictor(feats_out)
     
 net = DipolePredictor()
-
+net.to(device)
 for name, value in vars(net).items():
     print(f'{name}: {value}')
 
@@ -87,6 +88,7 @@ for epoch in range(1000):
     total_loss = 0
     total_r2 = 0
     for batch in train_loader:
+        batch = batch.to(device)
         # Reshape the features and coordinates based on the batch vector
         feats, _ = to_dense_batch(batch.x, batch.batch) # Shape: (batch_size, num_nodes, num_features)
         coors, _ = to_dense_batch(batch.pos, batch.batch) # Shape: (batch_size, num_nodes, 3)
@@ -122,6 +124,7 @@ for epoch in range(1000):
         val_loss = 0
         val_r2 = 0
         for batch in val_loader:
+            batch = batch.to(device)
             feats, _ = to_dense_batch(batch.x, batch.batch)
             coors, _ = to_dense_batch(batch.pos, batch.batch)
             target = batch.y.view(-1, 3)
@@ -152,6 +155,7 @@ with torch.no_grad():
     test_loss = 0
     test_r2 = 0
     for batch in test_loader:
+        batch = batch.to(device)
         feats, _ = to_dense_batch(batch.x, batch.batch)
         coors, _ = to_dense_batch(batch.pos, batch.batch)
         target = batch.y.view(-1, 3)

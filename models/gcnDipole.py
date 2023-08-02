@@ -10,6 +10,7 @@ from torch_geometric.nn import GCNConv
 from torch_geometric.nn import global_mean_pool
 
 from sklearn.metrics import r2_score
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 dataset_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'dataset', 'dataset.pkl')
 
@@ -69,7 +70,7 @@ class DipolePredictorGCN(nn.Module):
 
 
 net = DipolePredictorGCN()
-
+net.to(device)
 for name, value in vars(net).items():
     print(f'{name}: {value}')
 
@@ -86,7 +87,7 @@ for epoch in range(1000):
     total_loss = 0
     total_r2 = 0
     for batch in train_loader:
-
+        batch = batch.to(device)
         target = batch.y.view(-1, 3) # Shape: (batch_size, 3)
 
         batch_sizes = [torch.sum(batch.batch == i) for i in range(batch.batch.max() + 1)]
@@ -116,6 +117,7 @@ for epoch in range(1000):
         val_loss = 0
         val_r2 = 0
         for batch in val_loader:
+            batch = batch.to(device)
             target = batch.y.view(-1, 3)
             feats_out = net(batch.x, batch.edge_index, batch.batch)
             # Compute Loss
@@ -142,6 +144,7 @@ with torch.no_grad():
     test_loss = 0
     test_r2 = 0
     for batch in test_loader:
+        batch = batch.to(device)
         target = batch.y.view(-1, 3)
         feats_out = net(batch.x, batch.edge_index, batch.batch)
 
