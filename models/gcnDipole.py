@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 import torch.nn as nn
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GCNConv
+from torch_geometric.nn import global_mean_pool
 
 from sklearn.metrics import r2_score
 
@@ -50,20 +51,20 @@ print("Test size:", len(test_data))
 class DipolePredictorGCN(nn.Module):
     def __init__(self):
         super(DipolePredictorGCN, self).__init__()
-        self.conv1 = GCNConv(1, 64)  # Update the input size to 1
+        self.conv1 = GCNConv(1, 64)
         self.conv2 = GCNConv(64, 32)
         self.predictor = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(32 * max_num_nodes, 128),
+            nn.Linear(32, 128),
             nn.ReLU(),
             nn.Linear(128, 3)
         )
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, batch):
         x = self.conv1(x, edge_index)
         x = torch.relu(x)
         x = self.conv2(x, edge_index)
         x = torch.relu(x)
+        x = global_mean_pool(x, batch)  # Pooling operation to reduce the tensor size
         return self.predictor(x)
 
 
@@ -89,8 +90,7 @@ for epoch in range(1000):
         target = batch.y.view(-1, 3) # Shape: (batch_size, 3)
 
         batch_sizes = [torch.sum(batch.batch == i) for i in range(batch.batch.max() + 1)]
-        
-        feats_out = net(batch.x, batch.edge_index)
+        feats_out = net(batch.x, batch.edge_index, batch.batch)
         # Compute Loss
         loss = loss_function(feats_out, target)
 
@@ -117,8 +117,7 @@ for epoch in range(1000):
         val_r2 = 0
         for batch in val_loader:
             target = batch.y.view(-1, 3)
-            feats_out = net(batch.x, batch.edge_index)
-
+            feats_out = net(batch.x, batch.edge_index, batch.batch)
             # Compute Loss
             loss = loss_function(feats_out, target)
             val_loss += loss.item()
@@ -144,7 +143,7 @@ with torch.no_grad():
     test_r2 = 0
     for batch in test_loader:
         target = batch.y.view(-1, 3)
-        feats_out = net(batch.x, batch.edge_index)
+        feats_out = net(batch.x, batch.edge_index, batch.batch)
 
         # Compute Loss
         loss = loss_function(feats_out, target)
