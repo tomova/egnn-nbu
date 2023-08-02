@@ -50,7 +50,7 @@ print("Test size:", len(test_data))
 class DipolePredictorGCN(nn.Module):
     def __init__(self):
         super(DipolePredictorGCN, self).__init__()
-        self.conv1 = GCNConv(max_num_nodes, 64) 
+        self.conv1 = GCNConv(1, 64)  # Update the input size to 1
         self.conv2 = GCNConv(64, 32)
         self.predictor = nn.Sequential(
             nn.Flatten(),
@@ -65,6 +65,7 @@ class DipolePredictorGCN(nn.Module):
         x = self.conv2(x, edge_index)
         x = torch.relu(x)
         return self.predictor(x)
+
 
 net = DipolePredictorGCN()
 
