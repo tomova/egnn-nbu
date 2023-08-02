@@ -48,28 +48,34 @@ print("Validation size:", len(val_data))
 print("Test size:", len(test_data))
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+class GlobalSumPooling(nn.Module):
+    def forward(self, x):
+        return x.sum(dim=1)
 
 class DipolePredictor(nn.Module):
     def __init__(self):
         super(DipolePredictor, self).__init__()
-        self.egnn = EGNN_Network(
+        self.egnn1 = EGNN_Network(
             num_tokens=10,
-            dim=32,
-            depth=3
+            dim=128,
+            depth=2
         )
-        # Define additional layers here to make the prediction
-        # The input size should match the output size of the egnn
-        self.predictor = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(32 * max_num_nodes, 128), 
-            nn.ReLU(),
-            nn.Linear(128, 3)
+        self.egnn2 = EGNN_Network(
+            num_tokens=10,
+            dim=64,
+            depth=1
         )
+        self.readout = GlobalSumPooling()  # Custom readout layer
+        self.fc = nn.Linear(64, 3)
 
     def forward(self, feats, coors, adj_mat):
-        feats_out, _ = self.egnn(feats, coors, adj_mat=adj_mat)
-        return self.predictor(feats_out)
-    
+        feats_out, _ = self.egnn1(feats, coors, adj_mat=adj_mat)
+        feats_out, _ = self.egnn2(feats_out, coors, adj_mat=adj_mat)
+        graph_embedding = self.readout(feats_out)
+        return self.fc(graph_embedding)
+
+
+
 net = DipolePredictor()
 net.to(device)
 for name, value in vars(net).items():
