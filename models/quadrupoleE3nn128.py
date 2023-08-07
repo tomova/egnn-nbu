@@ -148,7 +148,7 @@ for epoch in range(1000):
             val_loss_l1 += loss_l1.item()
             val_loss_mse += loss_mse.item()
             # Compute R2 score
-            r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
+            r2 = r2_score(target.view(-1).cpu().numpy(), feats_out.view(-1).detach().cpu().numpy())
             val_r2 += r2
         avg_val_loss_l1 = val_loss_l1 / len(val_loader)
         avg_val_loss_mse = val_loss_mse / len(val_loader)
