@@ -193,7 +193,7 @@ with torch.no_grad():
         test_rmse += np.sqrt(mean_squared_error(true_values, pred_values))
         test_mape += mean_absolute_percentage_error(true_values, pred_values)
         test_evs += explained_variance_score(true_values, pred_values)
-        test_me += max_error(true_values, pred_values)
+        #test_me += max_error(true_values, pred_values)
 
     avg_test_loss_l1 = test_loss_l1 / len(test_loader)
     avg_test_r2 = test_r2 / len(test_loader)
@@ -201,9 +201,9 @@ with torch.no_grad():
     avg_test_rmse = test_rmse / len(test_loader)
     avg_test_mape = test_mape / len(test_loader)
     avg_test_evs = test_evs / len(test_loader)
-    avg_test_me = test_me / len(test_loader)
+    #avg_test_me = test_me / len(test_loader)
     print(f'Test Loss L1: {avg_test_loss_l1}, MSE Loss: {avg_test_loss_mse}, Test R2 Score: {avg_test_r2}')
-    print(f'Test RMSE: {avg_test_rmse}, MAPE: {avg_test_mape}, Explained Variance Score: {avg_test_evs}, Max Error: {avg_test_me}')
+    print(f'Test RMSE: {avg_test_rmse}, MAPE: {avg_test_mape}, Explained Variance Score: {avg_test_evs}')
 
 
 # You can load the saved model using `net.load_state_dict(torch.load('best_model.pth'))`

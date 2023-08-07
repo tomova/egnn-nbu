@@ -186,10 +186,6 @@ with torch.no_grad():
         loss_mse = mse_loss(feats_out, target)
         test_loss_mse += loss_mse.item()
 
-        # Compute R2 score
-        r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
-        test_r2 += r2
-
         # Calculate additional metrics
          # Reshape for metric calculations
         true_values = target.view(-1).cpu().numpy()
