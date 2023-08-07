@@ -23,13 +23,14 @@ with open(dataset_path, 'rb') as f:
 BATCH_SIZE = 128
 max_num_nodes = 0
 dataset = []
-for atom_features, atom_positions, _, bond_features, dipole, _ in data:
+for atom_features, atom_positions, adjacency_matrix, bond_features, dipole, _ in data:
+    edge_index = torch.tensor(np.stack(np.where(adjacency_matrix == 1)), dtype=torch.long)
     x = torch.tensor(atom_features, dtype=torch.float)
     num_nodes = x.shape[0]  # Number of nodes in the current graph
     max_num_nodes = max(max_num_nodes, num_nodes)  # Update if greater than previous max
     pos = torch.tensor(np.array(atom_positions), dtype=torch.float)
     y = torch.tensor(dipole, dtype=torch.float)
-    graph_data = Data(x=x, pos=pos, y=y)
+    graph_data = Data(x=x, edge_index=edge_index, pos=pos, y=y)
     dataset.append(graph_data)
 
 print("Maximum number of atoms:", max_num_nodes)
