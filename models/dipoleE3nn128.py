@@ -1,8 +1,8 @@
 from torch_geometric.utils import to_dense_batch
-from torch_geometric.utils import to_dense_adj
 import pickle
 import os
 from torch.nn.functional import mse_loss
+from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, explained_variance_score, max_error
 import torch
 import numpy as np
 from torch_geometric.data import Data
@@ -23,22 +23,12 @@ BATCH_SIZE = 128
 max_num_nodes = 0
 dataset = []
 for atom_features, atom_positions, _, bond_features, dipole, _ in data:
-    non_zero_indices = np.transpose(np.nonzero(bond_features))
-    if non_zero_indices.size == 0:  # No bonds
-        edge_index = torch.empty((2, 0), dtype=torch.long)  # Empty edge index, meaning no edges
-        edge_attr = torch.empty((0, 1), dtype=torch.float)  # Empty edge attributes
-    else:
-        edge_index = torch.tensor(non_zero_indices, dtype=torch.long).t()  # Transposing for the desire># Extracting bond types (edge attributes) from the non-zero elements
-        bond_types = bond_features[non_zero_indices[:, 0], non_zero_indices[:, 1]]
-        edge_attr = torch.tensor(bond_types, dtype=torch.float).unsqueeze(-1)
     x = torch.tensor(atom_features, dtype=torch.float)
-    
     num_nodes = x.shape[0]  # Number of nodes in the current graph
     max_num_nodes = max(max_num_nodes, num_nodes)  # Update if greater than previous max
     pos = torch.tensor(np.array(atom_positions), dtype=torch.float)
     y = torch.tensor(dipole, dtype=torch.float)
-    
-    graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, pos=pos, y=y)
+    graph_data = Data(x=x, pos=pos, y=y)
     dataset.append(graph_data)
 
 print("Maximum number of atoms:", max_num_nodes)
@@ -160,7 +150,7 @@ for epoch in range(1000):
         avg_val_loss_l1 = val_loss_l1 / len(val_loader)
         avg_val_loss_mse = val_loss_mse / len(val_loader)
         avg_val_r2 = val_r2 / len(val_loader)
-        print(f'Validation L1 Loss: {avg_val_loss_l1}, Validation MSE Loss: {avg_val_loss_mse}, Validation R2 Score: {avg_r2}')
+        print(f'Validation L1 Loss: {avg_val_loss_l1}, Validation MSE Loss: {avg_val_loss_mse}, Validation R2 Score: {avg_val_r2}')
 
 
         # Save the model if it has the best validation loss so far
@@ -176,6 +166,10 @@ with torch.no_grad():
     test_loss_l1 = 0
     test_loss_mse = 0
     test_r2 = 0
+    test_rmse = 0
+    test_mape = 0
+    test_evs = 0
+    test_me = 0
     for batch in test_loader:
         batch = batch.to(device)
         feats, _ = to_dense_batch(batch.x, batch.batch)
@@ -193,10 +187,24 @@ with torch.no_grad():
         r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
         test_r2 += r2
 
+        # Calculate additional metrics
+        true_values = target.cpu().numpy()
+        pred_values = feats_out.detach().cpu().numpy()
+        test_rmse += np.sqrt(mean_squared_error(true_values, pred_values))
+        test_mape += mean_absolute_percentage_error(true_values, pred_values)
+        test_evs += explained_variance_score(true_values, pred_values)
+        test_me += max_error(true_values, pred_values)
+        avg_test_rmse = test_rmse / len(test_loader)
+        avg_test_mape = test_mape / len(test_loader)
+        avg_test_evs = test_evs / len(test_loader)
+        avg_test_me = test_me / len(test_loader)
+
     avg_test_loss_l1 = test_loss_l1 / len(test_loader)
     avg_test_r2 = test_r2 / len(test_loader)
     avg_test_loss_mse = test_loss_mse / len(val_loader)
     print(f'Test Loss L1: {avg_test_loss_l1}, MSE Loss: {avg_test_loss_mse}, Test R2 Score: {avg_test_r2}')
+    print(f'Test RMSE: {avg_test_rmse}, MAPE: {avg_test_mape}, Explained Variance Score: {avg_test_evs}, Max Error: {avg_test_me}')
+
 
 # You can load the saved model using `net.load_state_dict(torch.load('best_model.pth'))`
 # Then, you can pass your input features to the model using `net(feats, coors, adj_mat=adj_mat)`

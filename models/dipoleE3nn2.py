@@ -21,16 +21,16 @@ with open(dataset_path, 'rb') as f:
 
 
 max_num_nodes = 0
-dataset_tg = []
+dataset = []
 for atom_features, atom_positions, _, bond_features, dipole, _ in data:
-    # Bond start and end indices
-    bond_indices = np.array([(bond[0], bond[1]) for bond in bond_features]).T
-    edge_index = torch.tensor(bond_indices, dtype=torch.long)
-    
-    # Bond types as edge attributes
-    bond_types = [bond[2] for bond in bond_features]
-    edge_attr = torch.tensor(bond_types, dtype=torch.float).unsqueeze(-1)
-    
+    non_zero_indices = np.transpose(np.nonzero(bond_features))
+    if non_zero_indices.size == 0:  # No bonds
+        edge_index = torch.empty((2, 0), dtype=torch.long)  # Empty edge index, meaning no edges
+        edge_attr = torch.empty((0, 1), dtype=torch.float)  # Empty edge attributes
+    else:
+        edge_index = torch.tensor(non_zero_indices, dtype=torch.long).t()  # Transposing for the desire># Extracting bond types (edge attributes) from the non-zero elements
+        bond_types = bond_features[non_zero_indices[:, 0], non_zero_indices[:, 1]]
+        edge_attr = torch.tensor(bond_types, dtype=torch.float).unsqueeze(-1)
     x = torch.tensor(atom_features, dtype=torch.float)
     
     num_nodes = x.shape[0]  # Number of nodes in the current graph
@@ -39,17 +39,17 @@ for atom_features, atom_positions, _, bond_features, dipole, _ in data:
     y = torch.tensor(dipole, dtype=torch.float)
     
     graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, pos=pos, y=y)
-    dataset_tg.append(graph_data)
+    dataset.append(graph_data)
 
 print("Maximum number of atoms:", max_num_nodes)
 # Define the split sizes
-total_samples = len(dataset_tg)
+total_samples = len(dataset)
 train_size = 110000
 val_size = 10000
 test_size = total_samples - train_size - val_size
 
 # Split the data using train_test_split with specific random seed
-train_data, temp_data = train_test_split(dataset_tg, train_size=train_size, random_state=42)
+train_data, temp_data = train_test_split(dataset, train_size=train_size, random_state=42)
 val_data, test_data = train_test_split(temp_data, train_size=val_size, random_state=42)
 
 # Print the size of each split
@@ -112,13 +112,8 @@ for epoch in range(1000):
         coors, _ = to_dense_batch(batch.pos, batch.batch) # Shape: (batch_size, num_nodes, 3)
 
         target = batch.y.view(-1, 3) # Shape: (batch_size, 3)
-
-#        batch_sizes = [torch.sum(batch.batch == i) for i in range(batch.batch.max() + 1)]
-        #adj_mat = to_dense_adj(batch.edge_index, batch = batch.batch)
         feats_out = net(feats, coors)
         
-        # Compute Loss
-        #loss = loss_function(feats_out, target)
         # Compute Losses
         loss_l1 = loss_function_l1(feats_out, target)
         loss_mse = mse_loss(feats_out, target)
