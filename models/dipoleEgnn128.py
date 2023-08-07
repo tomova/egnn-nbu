@@ -4,7 +4,7 @@ from torch.nn.functional import mse_loss
 from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, explained_variance_score
 import torch
 import numpy as np
-from torch_geometric.loader import Data
+from torch_geometric.data import Data
 from sklearn.model_selection import train_test_split
 import torch.nn as nn
 from torch_geometric.loader import DataLoader
