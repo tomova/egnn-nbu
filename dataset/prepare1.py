@@ -85,7 +85,7 @@ for idx, mol in enumerate(sdf_supplier):
     quadrupole = calculate_quadrupole_moment(mol)
 
     # Store graph representation and properties
-    dataset.append((atom_features, adjacency_matrix, atom_positions, dipole, quadrupole))
+    dataset.append((atom_features, atom_positions, adjacency_matrix, bond_features, dipole, quadrupole))
 
 # Save to disk
 with open('datasetQM9.pkl', 'wb') as file:
