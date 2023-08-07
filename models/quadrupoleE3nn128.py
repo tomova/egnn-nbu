@@ -191,16 +191,19 @@ with torch.no_grad():
         test_r2 += r2
 
         # Calculate additional metrics
-        true_values = target.cpu().numpy()
-        pred_values = feats_out.detach().cpu().numpy()
+         # Reshape for metric calculations
+        true_values = target.view(-1).cpu().numpy()
+        pred_values = feats_out.view(-1).detach().cpu().numpy()
+        
+        # Compute R2 score
+        r2 = r2_score(true_values, pred_values)
+        test_r2 += r2
+
+        # Calculate additional metrics
         test_rmse += np.sqrt(mean_squared_error(true_values, pred_values))
         test_mape += mean_absolute_percentage_error(true_values, pred_values)
         test_evs += explained_variance_score(true_values, pred_values)
         test_me += max_error(true_values, pred_values)
-        avg_test_rmse = test_rmse / len(test_loader)
-        avg_test_mape = test_mape / len(test_loader)
-        avg_test_evs = test_evs / len(test_loader)
-        avg_test_me = test_me / len(test_loader)
 
     avg_test_loss_l1 = test_loss_l1 / len(test_loader)
     avg_test_r2 = test_r2 / len(test_loader)
