@@ -74,6 +74,9 @@ class QuadrupolePredictorE3NN(nn.Module):
         graph_embedding = F.relu(self.fc1(graph_embedding))
         output = self.fc2(graph_embedding)
 
+        # Reshape the output to (batch_size, 3, 3)
+        output = output.view(-1, 3, 3)
+
         return output
 
 
@@ -117,7 +120,7 @@ for epoch in range(1000):
         optimizer.zero_grad()
         total_loss_l1 += loss_l1.item()
         total_loss_mse += loss_mse.item()
-        r2 = r2_score(target.cpu().numpy(), feats_out.detach().cpu().numpy())
+        r2 = r2_score(target.view(-1).cpu().numpy(), feats_out.view(-1).detach().cpu().numpy())
         total_r2 += r2
 
     avg_loss_l1 = total_loss_l1 / len(train_loader)
@@ -202,6 +205,10 @@ with torch.no_grad():
     avg_test_loss_l1 = test_loss_l1 / len(test_loader)
     avg_test_r2 = test_r2 / len(test_loader)
     avg_test_loss_mse = test_loss_mse / len(val_loader)
+    avg_test_rmse = test_rmse / len(test_loader)
+    avg_test_mape = test_mape / len(test_loader)
+    avg_test_evs = test_evs / len(test_loader)
+    avg_test_me = test_me / len(test_loader)
     print(f'Test Loss L1: {avg_test_loss_l1}, MSE Loss: {avg_test_loss_mse}, Test R2 Score: {avg_test_r2}')
     print(f'Test RMSE: {avg_test_rmse}, MAPE: {avg_test_mape}, Explained Variance Score: {avg_test_evs}, Max Error: {avg_test_me}')
 
