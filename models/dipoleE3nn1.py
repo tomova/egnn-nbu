@@ -26,29 +26,25 @@ with open(dataset_path, 'rb') as f:
 max_num_nodes = 0
 dataset_tg = []
 
-for atom_features, adjacency_matrix, atom_positions, dipole, _ in data:
-    edge_index = torch.tensor(np.stack(np.where(adjacency_matrix == 1)), dtype=torch.long)
 
-    # Update x to handle the 2D list of atomic features
-    x = torch.tensor(atom_features, dtype=torch.float) # No need to unsqueeze, as atom_features is already 2D
-
-    # Edge features based on bond types
-    # This is an optional step. If you plan to use edge (bond) features, 
-    # you can follow the commented out code to integrate bond features.
-    # bond_edge_values = bond_features[edge_index[0], edge_index[1]]
-    # edge_attr = torch.tensor(bond_edge_values, dtype=torch.float).unsqueeze(-1)
-
+for atom_features, atom_positions, _, bond_features, dipole, _ in data:
+    # Bond start and end indices
+    bond_indices = np.array([(bond[0], bond[1]) for bond in bond_features]).T
+    edge_index = torch.tensor(bond_indices, dtype=torch.long)
+    
+    # Bond types as edge attributes
+    bond_types = [bond[2] for bond in bond_features]
+    edge_attr = torch.tensor(bond_types, dtype=torch.float).unsqueeze(-1)
+    
+    x = torch.tensor(atom_features, dtype=torch.float)
+    
     num_nodes = x.shape[0]  # Number of nodes in the current graph
     max_num_nodes = max(max_num_nodes, num_nodes)  # Update if greater than previous max
     pos = torch.tensor(np.array(atom_positions), dtype=torch.float)
     y = torch.tensor(dipole, dtype=torch.float)
     
-    # Create PyTorch Geometric data with or without bond features
-    # graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, pos=pos, y=y)
-    graph_data = Data(x=x, edge_index=edge_index, pos=pos, y=y) # without bond features
-
+    graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, pos=pos, y=y)
     dataset_tg.append(graph_data)
-
 
 
 # Define the split sizes
@@ -71,19 +67,20 @@ class DipolePredictorE3NN(nn.Module):
     def __init__(self):
         super(DipolePredictorE3NN, self).__init__()
 
-        irreps_in = Irreps("7x0e")  # Updated this to accommodate the new feature size
+        irreps_in_feats = Irreps("5x0e")  
         irreps_out = Irreps("1x1e")
         irreps_in_coors = Irreps("1x1e")
-
+        irreps_edge_attr = Irreps("1x1e")
+        irreps_in1 = irreps_in_feats + irreps_in_coors  # Concatenation of feats and coors
         # Equivariant tensor product
-        self.tp = FullyConnectedTensorProduct(irreps_in1=irreps_in, irreps_in2=irreps_in_coors, irreps_out=irreps_out)
+        self.tp = FullyConnectedTensorProduct(irreps_in1=irreps_in1, irreps_in2=irreps_edge_attr, irreps_out=irreps_out)
 
         # Fully connected layers for post-processing
         self.fc1 = nn.Linear(irreps_out.dim, 128)
         self.fc2 = nn.Linear(128, 3)
 
-    def forward(self, feats, coors, adj_mat):
-        feats_out = self.tp(feats, coors)
+    def forward(self, feats, edge_attr):
+        feats_out = self.tp(feats, edge_attr)
 
         # Mean pooling across nodes, preserving batch and feature dims
         graph_embedding = feats_out.mean(dim=1)
@@ -124,6 +121,12 @@ for epoch in range(1000):
         coors, _ = to_dense_batch(batch.pos, batch.batch) # Shape: (batch_size, num_nodes, 3)
         #print("feats shape:", feats.shape)
         #print("coors shape:", coors.shape)
+        # Concatenate feats and coors
+        concatenated_input = torch.cat([feats, coors], dim=-1).float()
+
+        # Extract edge attributes (assuming you've added them in the Data object)
+        edge_attributes, _ = to_dense_batch(batch.edge_attr, batch.batch)  # Shape: (batch_size, num_edges, num_edge_features)
+
         #print("edge_index batch shape:", batch.edge_index.shape)
 #        edge_index_r, _ = to_dense_batch(batch.edge_index, batch.batch)
         # Assuming edge_index is of shape (2, num_edges) and batch is a vector of length num_nodes
@@ -131,13 +134,13 @@ for epoch in range(1000):
 
 #        print(" dense edge_index_r shape:", dense_edge_index.shape)
         target = batch.y.view(-1, 3) # Shape: (batch_size, 3)
-
+        feats_out = net(concatenated_input, edge_attributes)
 #        batch_sizes = [torch.sum(batch.batch == i) for i in range(batch.batch.max() + 1)]
-        adj_mat = to_dense_adj(batch.edge_index, batch = batch.batch)
-        feats = feats.float()
-        coors = coors.float()
+        #adj_mat = to_dense_adj(batch.edge_index, batch = batch.batch)
+        #feats = feats.float()
+        #coors = coors.float()
 
-        feats_out = net(feats, coors, adj_mat=adj_mat)
+        #feats_out = net(feats, coors, adj_mat=adj_mat)
       #  print("feats shape:", feats.shape)
 
         # Compute Loss
@@ -173,12 +176,15 @@ for epoch in range(1000):
             batch = batch.to(device)
             feats, _ = to_dense_batch(batch.x, batch.batch)
             coors, _ = to_dense_batch(batch.pos, batch.batch)
-            target = batch.y.view(-1, 3)
-            adj_mat = to_dense_adj(batch.edge_index, batch=batch.batch)
-            feats = feats.float()
-            coors = coors.float()
+            edge_attributes, _ = to_dense_batch(batch.edge_attr, batch.batch)  # Add this
 
-            feats_out = net(feats, coors, adj_mat=adj_mat)
+            concatenated_input = torch.cat([feats, coors], dim=-1).float()
+            target = batch.y.view(-1, 3)
+            #adj_mat = to_dense_adj(batch.edge_index, batch=batch.batch)
+            #feats = feats.float()
+            #coors = coors.float()
+
+            feats_out = net(concatenated_input, edge_attributes)
 
             # Compute Loss
             loss_l1 = loss_function_l1(feats_out, target)
@@ -213,12 +219,19 @@ with torch.no_grad():
         batch = batch.to(device)
         feats, _ = to_dense_batch(batch.x, batch.batch)
         coors, _ = to_dense_batch(batch.pos, batch.batch)
-        target = batch.y.view(-1, 3)
-        adj_mat = to_dense_adj(batch.edge_index, batch=batch.batch)
-        feats = feats.float()
-        coors = coors.float()
+        edge_attributes, _ = to_dense_batch(batch.edge_attr, batch.batch)  # Add this
 
-        feats_out = net(feats, coors, adj_mat=adj_mat)
+        concatenated_input = torch.cat([feats, coors], dim=-1).float()
+
+        target = batch.y.view(-1, 3)
+
+        feats_out = net(concatenated_input, edge_attributes)
+        
+        #adj_mat = to_dense_adj(batch.edge_index, batch=batch.batch)
+        #feats = feats.float()
+        #coors = coors.float()
+
+        #feats_out = net(feats, coors, adj_mat=adj_mat)
         # Compute Loss
         loss_l1 = loss_function_l1(feats_out, target)
         test_loss_l1 += loss_l1.item()
