@@ -28,7 +28,7 @@ for atom_features, atom_positions, adjacency_matrix, bond_features, dipole, _ in
     x = torch.tensor(atom_features, dtype=torch.float)
     num_nodes = x.shape[0]  # Number of nodes in the current graph
     max_num_nodes = max(max_num_nodes, num_nodes)  # Update if greater than previous max
-    pos = torch.tensor(np.array(atom_positions), dtype=torch.float)
+    pos = torch.tensor(np.array(atom_positions), dtype=torch.long)
     y = torch.tensor(dipole, dtype=torch.float)
     graph_data = Data(x=x, edge_index=edge_index, pos=pos, y=y)
     dataset.append(graph_data)
@@ -100,6 +100,7 @@ for epoch in range(1000):
         batch = batch.to(device)
         # Reshape the features and coordinates based on the batch vector
         feats, _ = to_dense_batch(batch.x, batch.batch) # Shape: (batch_size, num_nodes, num_features)
+        feats = feats[:, :, 0:1]
         coors, _ = to_dense_batch(batch.pos, batch.batch) # Shape: (batch_size, num_nodes, 3)
 
         target = batch.y.view(-1, 3) # Shape: (batch_size, 3)
